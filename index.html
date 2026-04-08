@@ -407,7 +407,7 @@
 
 
     function effectiveClientId() {
-      return (APP_CONFIG.fixedClientId || els.clientId.value || '').trim();
+      return APP_CONFIG.fixedClientId;
     }
 
     function effectiveRedirectUri() {
