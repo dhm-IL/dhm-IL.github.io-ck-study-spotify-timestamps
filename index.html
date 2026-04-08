@@ -168,6 +168,12 @@
 <body>
   <div class="wrap">
     <h1>Spotify Study Logger</h1>
+    <p>
+      Single-file local web app for session-based Spotify logging with local export.
+      It uses Spotify OAuth PKCE, polls playback state, samples microphone loudness,
+      and stores JSON/CSV on the device.
+    </p>
+
     <section class="banner warn" id="studyStatusBanner">
       <strong>Checking setup…</strong>
       <div id="studyStatusText">Please wait while the app checks Spotify and session readiness.</div>
@@ -179,8 +185,9 @@
         <div id="authStatus"></div>
         <div id="appConfigNote" class="small muted" style="margin-bottom:8px;"></div>
 
-        <button id="loginBtn">Connect Spotify</button>
 
+        <label for="playlistUri">Playlist URI or URL</label>
+        <input id="playlistUri" placeholder="spotify:playlist:... or https://open.spotify.com/playlist/..." />
         <label for="playlistPicker">Choose playlist</label>
         <select id="playlistPicker">
           <option value="">Connect Spotify first…</option>
@@ -189,6 +196,7 @@
 
         <input id="pollMs" type="number" min="500" step="100" value="1000" class="hidden" />
 
+        <button id="loginBtn">Connect Spotify</button>
         <button id="logoutBtn" class="secondary">Disconnect Spotify</button>
         <div class="helper">Use this only if you need to switch Spotify accounts.</div>
       </section>
@@ -359,6 +367,30 @@
       fixedRedirectUri: 'https://dhm-il.github.io/dhm-IL.github.io-ck-study-spotify-timestamps/'
     };
 
+    function safeLocalGet(key) {
+      try { return window.localStorage.getItem(key); } catch (err) { console.warn('localStorage unavailable', err); return null; }
+    }
+
+    function safeLocalSet(key, value) {
+      try { window.localStorage.setItem(key, value); return true; } catch (err) { console.warn('localStorage unavailable', err); return false; }
+    }
+
+    function safeLocalRemove(key) {
+      try { window.localStorage.removeItem(key); return true; } catch (err) { console.warn('localStorage unavailable', err); return false; }
+    }
+
+    function safeSessionGet(key) {
+      try { return window.sessionStorage.getItem(key); } catch (err) { console.warn('sessionStorage unavailable', err); return null; }
+    }
+
+    function safeSessionSet(key, value) {
+      try { window.sessionStorage.setItem(key, value); return true; } catch (err) { console.warn('sessionStorage unavailable', err); return false; }
+    }
+
+    function safeSessionRemove(key) {
+      try { window.sessionStorage.removeItem(key); return true; } catch (err) { console.warn('sessionStorage unavailable', err); return false; }
+    }
+
     function nowUtc() {
       return new Date().toISOString();
     }
@@ -405,7 +437,7 @@
           expiresAt: appState.expiresAt
         }
       };
-      localStorage.setItem(appState.storageKey, JSON.stringify(data));
+      safeLocalSet(appState.storageKey, JSON.stringify(data));
       renderEventTable();
       renderStatus();
       updateStudyStatusBanner();
@@ -413,7 +445,7 @@
     }
 
     function loadFromLocalStorage() {
-      const raw = localStorage.getItem(appState.storageKey);
+      const raw = safeLocalGet(appState.storageKey);
       if (!raw) return;
       try {
         const data = JSON.parse(raw);
@@ -476,7 +508,7 @@
       }
       const codeVerifier = generateRandomString(96);
       appState.codeVerifier = codeVerifier;
-      sessionStorage.setItem('spotify_code_verifier', codeVerifier);
+      safeSessionSet('spotify_code_verifier', codeVerifier);
       saveConfigToLocalStorage();
 
       const challenge = base64UrlEncode(await sha256(codeVerifier));
@@ -494,7 +526,7 @@
     async function exchangeCodeForToken(code) {
       const clientId = effectiveClientId();
       const redirectUri = effectiveRedirectUri();
-      const codeVerifier = sessionStorage.getItem('spotify_code_verifier');
+      const codeVerifier = safeSessionGet('spotify_code_verifier');
       if (!clientId || !redirectUri || !codeVerifier) {
         throw new Error('Missing client ID, redirect URI, or PKCE verifier.');
       }
@@ -1134,8 +1166,8 @@
 
     function clearLocalSession() {
       if (!confirm('Reset the app and erase all saved study data and Spotify login from this browser?')) return;
-      localStorage.removeItem(appState.storageKey);
-      sessionStorage.removeItem('spotify_code_verifier');
+      safeLocalRemove(appState.storageKey);
+      safeSessionRemove('spotify_code_verifier');
       location.href = window.location.origin + window.location.pathname;
     }
 
@@ -1220,6 +1252,8 @@
     }
 
     async function main() {
+      updateStudyStatusBanner();
+      updateActionStates();
       loadFromLocalStorage();
       initDefaults();
       attachListeners();
@@ -1247,7 +1281,14 @@
       }
     }
 
-    main();
+    main().catch(err => {
+      console.error('App initialization failed', err);
+      updateStudyStatusBanner();
+      updateActionStates();
+      const msg = err?.message ? `Setup could not finish loading: ${err.message}` : 'Setup could not finish loading.';
+      els.studyStatusBanner.className = 'banner bad';
+      els.studyStatusBanner.innerHTML = `<strong>Setup needs attention</strong><div id="studyStatusText">${escapeHtml(msg)}</div>`;
+    });
   </script>
 </body>
 </html>
