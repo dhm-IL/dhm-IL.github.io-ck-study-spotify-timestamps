@@ -157,6 +157,8 @@
       <section class="card">
         <h2>1) Spotify setup</h2>
         <div id="authStatus"></div>
+        <div id="appConfigNote" class="small muted" style="margin-bottom:8px;"></div>
+
         <label for="clientId">Spotify Client ID</label>
         <input id="clientId" placeholder="Paste your Spotify app client ID" />
 
@@ -166,6 +168,18 @@
 
         <label for="playlistUri">Playlist URI or URL</label>
         <input id="playlistUri" placeholder="spotify:playlist:... or https://open.spotify.com/playlist/..." />
+        <div class="row">
+          <button id="loadPlaylistsBtn" class="secondary" type="button">Load My Playlists</button>
+          <button id="loadDevicesBtn" class="secondary" type="button">Load Devices</button>
+        </div>
+        <label for="playlistPicker">Choose one of my playlists</label>
+        <select id="playlistPicker">
+          <option value="">Load playlists after connecting…</option>
+        </select>
+        <label for="devicePicker">Choose active device</label>
+        <select id="devicePicker">
+          <option value="">Use Spotify active device</option>
+        </select>
 
         <label for="pollMs">Playback poll interval (ms)</label>
         <input id="pollMs" type="number" min="500" step="100" value="1000" />
@@ -289,8 +303,10 @@
       <h2>How to use</h2>
       <ol class="small muted">
         <li>Create a Spotify developer app and add this page URL as a Redirect URI.</li>
-        <li>Paste your Spotify Client ID here, then click <strong>Connect Spotify</strong>.</li>
-        <li>Open Spotify somewhere on the same account so there is an active device.</li>
+        <li>Optionally hardcode <code>fixedClientId</code> and <code>fixedRedirectUri</code> near the top of this file before deployment so collaborators never have to type them.</li>
+        <li>Click <strong>Connect Spotify</strong> and log in with the participant's own Spotify Premium account.</li>
+        <li>Open Spotify somewhere on that same account so there is an active device, then use <strong>Load Devices</strong> if you want to target one explicitly.</li>
+        <li>Use <strong>Load My Playlists</strong> to pick one of the logged-in user's playlists, or paste a playlist URL manually.</li>
         <li>Enable the microphone if you want room-noise estimates.</li>
         <li>Enter session metadata, then click <strong>Start Session + Play Playlist</strong>.</li>
         <li>When done, click <strong>End Session</strong>, fill end fields if needed, then download JSON or CSV and email the file.</li>
@@ -302,13 +318,21 @@
     const scopes = [
       'user-read-playback-state',
       'user-read-currently-playing',
-      'user-modify-playback-state'
+      'user-modify-playback-state',
+      'playlist-read-private',
+      'playlist-read-collaborative',
+      'user-read-private'
     ];
 
     const els = {
       clientId: document.getElementById('clientId'),
       redirectUri: document.getElementById('redirectUri'),
+      appConfigNote: document.getElementById('appConfigNote'),
       playlistUri: document.getElementById('playlistUri'),
+      playlistPicker: document.getElementById('playlistPicker'),
+      loadPlaylistsBtn: document.getElementById('loadPlaylistsBtn'),
+      loadDevicesBtn: document.getElementById('loadDevicesBtn'),
+      devicePicker: document.getElementById('devicePicker'),
       pollMs: document.getElementById('pollMs'),
       deviceId: document.getElementById('deviceId'),
       participantId: document.getElementById('participantId'),
@@ -363,7 +387,14 @@
       latestRms: null,
       latestDbfs: null,
       latestPlayback: null,
-      storageKey: 'spotify-study-logger-v1'
+      storageKey: 'spotify-study-logger-v2',
+      playlists: [],
+      devices: []
+    };
+
+    const APP_CONFIG = {
+      fixedClientId: '',
+      fixedRedirectUri: ''
     };
 
     function nowUtc() {
@@ -374,10 +405,36 @@
       return performance.now();
     }
 
+
+    function effectiveClientId() {
+      return (APP_CONFIG.fixedClientId || els.clientId.value || '').trim();
+    }
+
+    function effectiveRedirectUri() {
+      return (APP_CONFIG.fixedRedirectUri || els.redirectUri.value || window.location.origin + window.location.pathname).trim();
+    }
+
+    function applyFixedConfig() {
+      const fixedClient = !!APP_CONFIG.fixedClientId;
+      const fixedRedirect = !!APP_CONFIG.fixedRedirectUri;
+      if (fixedClient) {
+        els.clientId.value = APP_CONFIG.fixedClientId;
+        els.clientId.readOnly = true;
+      }
+      if (fixedRedirect) {
+        els.redirectUri.value = APP_CONFIG.fixedRedirectUri;
+        els.redirectUri.readOnly = true;
+      }
+      const notes = [];
+      if (fixedClient) notes.push('Client ID is prefilled for this study deployment.');
+      if (fixedRedirect) notes.push('Redirect URI is fixed for this deployment.');
+      els.appConfigNote.textContent = notes.join(' ');
+    }
+
     function saveConfigToLocalStorage() {
       const data = {
-        clientId: els.clientId.value.trim(),
-        redirectUri: els.redirectUri.value.trim(),
+        clientId: effectiveClientId(),
+        redirectUri: effectiveRedirectUri(),
         playlistUri: els.playlistUri.value.trim(),
         pollMs: els.pollMs.value,
         deviceId: els.deviceId.value.trim(),
@@ -467,8 +524,8 @@
     }
 
     async function beginSpotifyAuth() {
-      const clientId = els.clientId.value.trim();
-      const redirectUri = els.redirectUri.value.trim() || (window.location.origin + window.location.pathname);
+      const clientId = effectiveClientId();
+      const redirectUri = effectiveRedirectUri();
       if (!clientId) {
         alert('Enter your Spotify Client ID first.');
         return;
@@ -492,8 +549,8 @@
     }
 
     async function exchangeCodeForToken(code) {
-      const clientId = els.clientId.value.trim();
-      const redirectUri = els.redirectUri.value.trim();
+      const clientId = effectiveClientId();
+      const redirectUri = effectiveRedirectUri();
       const codeVerifier = sessionStorage.getItem('spotify_code_verifier');
       if (!clientId || !redirectUri || !codeVerifier) {
         throw new Error('Missing client ID, redirect URI, or PKCE verifier.');
@@ -527,7 +584,7 @@
         throw new Error('Spotify token expired and no refresh token is available.');
       }
       const body = new URLSearchParams({
-        client_id: els.clientId.value.trim(),
+        client_id: effectiveClientId(),
         grant_type: 'refresh_token',
         refresh_token: appState.refreshToken
       });
@@ -544,6 +601,54 @@
       if (tokenData.refresh_token) appState.refreshToken = tokenData.refresh_token;
       appState.expiresAt = Date.now() + (tokenData.expires_in * 1000) - 60000;
       saveConfigToLocalStorage();
+    }
+
+    async function loadMyProfile() {
+      return spotifyFetch('/me');
+    }
+
+    async function loadMyPlaylists() {
+      const collected = [];
+      let path = '/me/playlists?limit=50';
+      while (path) {
+        const page = await spotifyFetch(path);
+        if (page?.items) collected.push(...page.items);
+        path = page?.next ? page.next.replace('https://api.spotify.com/v1', '') : null;
+      }
+      appState.playlists = collected;
+      renderPlaylistPicker();
+      return collected;
+    }
+
+    async function loadAvailableDevices() {
+      const data = await spotifyFetch('/me/player/devices');
+      appState.devices = Array.isArray(data?.devices) ? data.devices : [];
+      renderDevicePicker();
+      return appState.devices;
+    }
+
+    function renderPlaylistPicker() {
+      const current = normalizePlaylistUri(els.playlistUri.value);
+      const options = ['<option value="">Choose one of my playlists…</option>'];
+      for (const p of appState.playlists) {
+        const uri = p?.uri || '';
+        const selected = uri && uri === current ? ' selected' : '';
+        const owner = p?.owner?.display_name ? ` — ${p.owner.display_name}` : '';
+        options.push(`<option value="${escapeHtml(uri)}"${selected}>${escapeHtml(p.name || uri)}${escapeHtml(owner)}</option>`);
+      }
+      els.playlistPicker.innerHTML = options.join('');
+    }
+
+    function renderDevicePicker() {
+      const current = els.deviceId.value.trim();
+      const options = ['<option value="">Use Spotify active device</option>'];
+      for (const d of appState.devices) {
+        const id = d?.id || '';
+        const selected = id && id === current ? ' selected' : '';
+        const suffix = d?.is_active ? ' — active' : '';
+        options.push(`<option value="${escapeHtml(id)}"${selected}>${escapeHtml(d.name || 'Unknown device')} (${escapeHtml(d.type || 'device')})${escapeHtml(suffix)}</option>`);
+      }
+      els.devicePicker.innerHTML = options.join('');
     }
 
     async function spotifyFetch(path, options = {}) {
@@ -574,7 +679,7 @@
         playlist_uri: normalizePlaylistUri(els.playlistUri.value),
         playback_position_ms: details.playback_position_ms ?? appState.latestPlayback?.progress_ms ?? null,
         is_playing: details.is_playing ?? appState.latestPlayback?.is_playing ?? null,
-        device_id: details.device_id ?? appState.latestPlayback?.device?.id ?? els.deviceId.value.trim() || null,
+        device_id: details.device_id ?? appState.latestPlayback?.device?.id ?? (els.deviceId.value.trim() || null),
         noise_rms: details.noise_rms ?? appState.latestRms,
         noise_dbfs: details.noise_dbfs ?? appState.latestDbfs,
         details
@@ -804,6 +909,30 @@
       }, ms);
     }
 
+    async function handleLoadPlaylists() {
+      try {
+        const profile = await loadMyProfile();
+        const playlists = await loadMyPlaylists();
+        addEvent('playlists_loaded', { count: playlists.length, spotify_user_id: profile?.id || null });
+      } catch (err) {
+        addEvent('playlist_load_failed', { message: err.message });
+        alert(`Could not load playlists: ${err.message}`);
+      }
+    }
+
+    async function handleLoadDevices() {
+      try {
+        const devices = await loadAvailableDevices();
+        addEvent('devices_loaded', { count: devices.length });
+        if (!devices.length) {
+          alert('No Spotify devices were found. Open Spotify on the Mac, iPad, or phone first.');
+        }
+      } catch (err) {
+        addEvent('device_load_failed', { message: err.message });
+        alert(`Could not load devices: ${err.message}`);
+      }
+    }
+
     async function startSessionAndPlay() {
       const playlistUri = normalizePlaylistUri(els.playlistUri.value);
       if (!playlistUri) {
@@ -896,7 +1025,7 @@
       return {
         exported_at_utc: nowUtc(),
         app_version: '1.0.0',
-        spotify_client_id: els.clientId.value.trim() || null,
+        spotify_client_id: effectiveClientId() || null,
         participant_id: els.participantId.value.trim() || null,
         redirect_uri: els.redirectUri.value.trim() || null,
         playlist_uri: normalizePlaylistUri(els.playlistUri.value),
@@ -977,6 +1106,10 @@
       appState.accessToken = null;
       appState.refreshToken = null;
       appState.expiresAt = null;
+      appState.playlists = [];
+      appState.devices = [];
+      renderPlaylistPicker();
+      renderDevicePicker();
       saveConfigToLocalStorage();
       renderStatus();
     }
@@ -1016,11 +1149,26 @@
       if (!els.redirectUri.value) {
         els.redirectUri.value = window.location.origin + window.location.pathname;
       }
+      applyFixedConfig();
+      renderPlaylistPicker();
+      renderDevicePicker();
     }
 
     function attachListeners() {
       els.loginBtn.addEventListener('click', beginSpotifyAuth);
       els.logoutBtn.addEventListener('click', logoutSpotify);
+      els.loadPlaylistsBtn.addEventListener('click', handleLoadPlaylists);
+      els.loadDevicesBtn.addEventListener('click', handleLoadDevices);
+      els.playlistPicker.addEventListener('change', () => {
+        if (els.playlistPicker.value) {
+          els.playlistUri.value = els.playlistPicker.value;
+          saveConfigToLocalStorage();
+        }
+      });
+      els.devicePicker.addEventListener('change', () => {
+        els.deviceId.value = els.devicePicker.value;
+        saveConfigToLocalStorage();
+      });
       els.micBtn.addEventListener('click', enableMicrophone);
       els.startSessionBtn.addEventListener('click', startSessionAndPlay);
       els.pauseBtn.addEventListener('click', pausePlayback);
@@ -1043,7 +1191,7 @@
       await handleAuthCallbackIfPresent();
       if (appState.accessToken) {
         startPolling();
-        try { await pollPlaybackOnce(); } catch (_) {}
+        try { await Promise.all([pollPlaybackOnce(), loadAvailableDevices().catch(() => []), loadMyPlaylists().catch(() => [])]); } catch (_) {}
       }
       if (appState.micEnabled) {
         startNoiseSampler();
