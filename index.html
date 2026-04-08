@@ -163,6 +163,77 @@
       color: #cbd5e1;
       font-size: 13px;
     }
+
+    .flow-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .stepper {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .step-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .step-chip.done {
+      background: rgba(34,197,94,0.15);
+      border-color: rgba(34,197,94,0.4);
+      color: #bbf7d0;
+    }
+    .step-chip.active {
+      border-color: rgba(245,158,11,0.5);
+      background: rgba(245,158,11,0.12);
+      color: #fde68a;
+    }
+    .status-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 14px;
+    }
+    .section-intro {
+      margin: -2px 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .card.compact {
+      padding-top: 14px;
+    }
+    .compact-metrics {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .metric-line {
+      padding: 10px 12px;
+      background: #0b1220;
+      border-radius: 10px;
+      border: 1px solid #223046;
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+    .metric-line strong {
+      color: var(--text);
+    }
+    .actions-helper {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
   </style>
 </head>
 <body>
@@ -170,14 +241,16 @@
     <h1>Study Session Logger</h1>
 
     <section class="banner warn" id="studyStatusBanner">
-      <strong>Checking setup…</strong>
+      <strong id="studyStatusTitle">Checking setup…</strong>
       <div id="studyStatusText">Please wait while the app checks Spotify and session readiness.</div>
+      <div class="stepper" id="setupStepper"></div>
     </section>
 
     <div class="grid">
       <section class="card">
         <h2>1) Spotify setup</h2>
-        <div id="authStatus"></div>
+        <p class="section-intro">Complete the highlighted step, then move to the next one.</p>
+        <div id="statusStrip" class="status-strip"></div>
 
         <button id="loginBtn">Connect Spotify</button>
 
@@ -195,7 +268,8 @@
       </section>
 
       <section class="card">
-        <h2>2) Session metadata</h2>
+        <h2>2) Session details</h2>
+        <p class="section-intro">Only required fields are shown before the session starts.</p>
         <div>
           <label for="participantId">Participant</label>
           <select id="participantId"></select>
@@ -227,17 +301,16 @@
         <input id="noiseSampleSeconds" type="number" min="1" step="1" value="1" class="hidden" />
       </section>
 
-      <section class="card">
-        <h2>3) Permissions & live status</h2>
+      <section class="card compact">
+        <h2>3) Live session</h2>
+        <p class="section-intro">Use the microphone only if you want noise measurements.</p>
         <button id="micBtn" class="secondary">Enable Microphone (for noise measurement)</button>
         <div id="micStatus" class="small muted" style="margin-top:8px;">Microphone not enabled.</div>
-        <div style="margin-top: 12px;" id="livePills"></div>
-
-        <div class="metric"><span>Current track</span><strong id="currentTrack">—</strong></div>
-        <div class="metric"><span>Playback state</span><strong id="playbackState">—</strong></div>
-        <div class="metric"><span>Playback position</span><strong id="playbackPosition">—</strong></div>
-        <div class="metric"><span>Noise RMS</span><strong id="noiseRms">—</strong></div>
-        <div class="metric"><span>Event count</span><strong id="eventCount">0</strong></div>
+        <div class="compact-metrics">
+          <div class="metric-line">Track: <strong id="currentTrack">—</strong></div>
+          <div class="metric-line">Playback: <strong id="playbackState">—</strong> · Position: <strong id="playbackPosition">—</strong></div>
+          <div class="metric-line">Mic: <strong id="noiseRms">—</strong> · Events logged: <strong id="eventCount">0</strong></div>
+        </div>
       </section>
 
       <section class="card" style="grid-column: 1 / -1;">
@@ -250,8 +323,7 @@
                 <th>UTC</th>
                 <th>Event</th>
                 <th>Track URI</th>
-                <th>Details</th>
-              </tr>
+                              </tr>
             </thead>
             <tbody id="logTableBody"></tbody>
           </table>
@@ -268,18 +340,11 @@
       <button id="downloadCsvBtn" class="secondary">Download CSV Data</button>
       <button id="clearBtn" class="secondary">Reset App (Erase All Data)</button>
     </div>
-    <div class="inline-note">Finish Session marks the study as done. Disconnect Spotify logs out of Spotify only. Reset App erases the saved study data and Spotify session from this browser.</div>
+    <div class="actions-helper">The app unlocks the next step automatically and prevents starting until required information is complete.</div>
 
     <section class="card" style="margin-top: 16px;">
-      <h2>How to use</h2>
-      <ol class="small muted">
-        <li>Connect Spotify.</li>
-        <li>Open the Spotify app on the participant device, then return to this page.</li>
-        <li>Select the participant and playlist.</li>
-        <li>Enter the starting temperature and humidity.</li>
-        <li>Click <strong>Start Study Session</strong>.</li>
-        <li>At the end, click <strong>Finish Session</strong>, enter the ending temperature and humidity, then download and share the CSV file.</li>
-      </ol>
+      <h2>Quick flow</h2>
+      <p class="small muted">Connect Spotify, confirm the participant device is active, choose the participant and playlist, enter the starting room conditions, then start the session. When the study ends, enter the ending conditions, finish the session, and download the CSV.</p>
     </section>
   </div>
 
@@ -305,14 +370,15 @@
       tempEnd: document.getElementById('tempEnd'),
       humidityEnd: document.getElementById('humidityEnd'),
       noiseSampleSeconds: document.getElementById('noiseSampleSeconds'),
-      authStatus: document.getElementById('authStatus'),
+      statusStrip: document.getElementById('statusStrip'),
       micStatus: document.getElementById('micStatus'),
       currentTrack: document.getElementById('currentTrack'),
       playbackState: document.getElementById('playbackState'),
       playbackPosition: document.getElementById('playbackPosition'),
       noiseRms: document.getElementById('noiseRms'),
       eventCount: document.getElementById('eventCount'),
-      livePills: document.getElementById('livePills'),
+      setupStepper: document.getElementById('setupStepper'),
+      studyStatusTitle: document.getElementById('studyStatusTitle'),
       logTableBody: document.getElementById('logTableBody'),
       loginBtn: document.getElementById('loginBtn'),
       logoutBtn: document.getElementById('logoutBtn'),
@@ -656,8 +722,7 @@
         playback_position_ms: details.playback_position_ms ?? appState.latestPlayback?.progress_ms ?? null,
         is_playing: details.is_playing ?? appState.latestPlayback?.is_playing ?? null,
         device_id: details.device_id ?? appState.latestPlayback?.device?.id ?? null,
-        noise_rms: details.noise_rms ?? appState.latestRms,
-        details
+        noise_rms: details.noise_rms ?? appState.latestRms
       };
       appState.events.push(evt);
       saveConfigToLocalStorage();
@@ -667,25 +732,26 @@
     function renderEventTable() {
       els.eventCount.textContent = String(appState.events.length);
       const rows = [...appState.events].reverse().slice(0, 200).map(evt => {
-        const details = JSON.stringify(evt.details || {});
         return `<tr>
           <td class="mono">${escapeHtml(evt.utc)}</td>
           <td>${escapeHtml(evt.event)}</td>
           <td class="mono">${escapeHtml(evt.track_uri || '—')}</td>
-          <td class="small mono">${escapeHtml(details)}</td>
         </tr>`;
       }).join('');
-      els.logTableBody.innerHTML = rows || '<tr><td colspan="4" class="muted">No events yet.</td></tr>';
+      els.logTableBody.innerHTML = rows || '<tr><td colspan="3" class="muted">No events yet.</td></tr>';
     }
 
     function renderStatus() {
       const authOk = !!appState.accessToken;
-      const micOk = !!appState.micEnabled;
       const sessionOk = !!appState.sessionStarted;
-      els.authStatus.innerHTML = [
+      const micOk = !!appState.micEnabled;
+      const deviceOk = hasActiveDevice();
+      const deviceLabel = activeDeviceName() ? `Device: ${escapeHtml(activeDeviceName())}` : 'Device not ready';
+      els.statusStrip.innerHTML = [
         `<span class="status ${authOk ? 'ok' : 'bad'}">Spotify ${authOk ? 'connected' : 'not connected'}</span>`,
-        `<span class="status ${micOk ? 'ok' : 'warn-pill'}">Mic ${micOk ? 'enabled' : 'optional / off'}</span>`,
-        `<span class="status ${sessionOk ? 'ok' : 'warn-pill'}">Session ${sessionOk ? 'running' : 'idle'}</span>`
+        `<span class="status ${sessionOk ? 'ok' : 'warn-pill'}">Session ${sessionOk ? 'running' : 'idle'}</span>`,
+        `<span class="status ${micOk ? 'ok' : 'warn-pill'}">Mic ${micOk ? 'on' : 'off'}</span>`,
+        `<span class="status ${deviceOk ? 'ok' : 'warn-pill'}">${deviceLabel}</span>`
       ].join(' ');
     }
 
@@ -708,59 +774,99 @@
       };
     }
 
+    function renderSetupStepper(currentStepKey) {
+      const steps = [
+        ['spotifyConnected', 'Connect Spotify'],
+        ['activeDeviceReady', 'Open participant device'],
+        ['participantSelected', 'Select participant'],
+        ['playlistSelected', 'Choose playlist'],
+        ['startConditions', 'Enter start conditions']
+      ];
+      const checks = setupChecks();
+      const completed = {
+        spotifyConnected: checks.spotifyConnected,
+        activeDeviceReady: checks.activeDeviceReady,
+        participantSelected: checks.participantSelected,
+        playlistSelected: checks.playlistSelected,
+        startConditions: checks.startTempEntered && checks.startHumidityEntered
+      };
+      els.setupStepper.innerHTML = steps.map(([key, label], index) => {
+        let cls = 'step-chip';
+        if (completed[key]) cls += ' done';
+        else if (key === currentStepKey) cls += ' active';
+        return `<span class="${cls}">${index + 1}. ${escapeHtml(label)}</span>`;
+      }).join('');
+    }
+
     function updateStudyStatusBanner() {
       const checks = setupChecks();
       let cls = 'warn';
-      let title = 'Action needed before starting';
-      let text = 'Connect Spotify to begin.';
+      let title = 'Checking setup';
+      let text = 'Please wait while the app checks Spotify and session readiness.';
+      let currentStepKey = 'spotifyConnected';
 
       if (appState.sessionStarted) {
         cls = 'ok';
         title = 'Session running';
-        text = 'The study session is active. When the study is over, click Finish Session, enter ending temperature and humidity, then download the data.';
+        text = 'Monitor the session here. When the study ends, enter the ending temperature and humidity, then click Finish Session.';
+        currentStepKey = null;
       } else if (appState.sessionEndUtc) {
         cls = 'ok';
         title = 'Session finished';
         text = 'Download the CSV data file and share it with the research team.';
+        currentStepKey = null;
       } else if (!checks.spotifyConnected) {
         cls = 'bad';
-        title = 'Connect Spotify first';
-        text = 'Click Connect Spotify, sign in, then return to this app.';
+        title = 'Step 1: Connect Spotify';
+        text = 'Click Connect Spotify, sign in, then return to this page.';
+        currentStepKey = 'spotifyConnected';
       } else if (!checks.activeDeviceReady) {
         cls = 'warn';
-        title = 'Open Spotify on the participant device';
-        text = 'No active Spotify device was found. Open the Spotify app on the participant device, start or resume playback there, then return to this app.';
+        title = 'Step 2: Open Spotify on the participant device';
+        text = 'Open the Spotify app on the participant device and start or resume playback there.';
+        currentStepKey = 'activeDeviceReady';
       } else if (!checks.participantSelected) {
         cls = 'warn';
-        title = 'Select the participant';
+        title = 'Step 3: Select the participant';
         text = 'Choose the participant before starting the study session.';
+        currentStepKey = 'participantSelected';
       } else if (!checks.playlistSelected) {
         cls = 'warn';
-        title = 'Choose a playlist';
-        text = 'Select a playlist from the dropdown before starting the study session.';
+        title = 'Step 4: Choose a playlist';
+        text = 'Pick the playlist you want to use for this session.';
+        currentStepKey = 'playlistSelected';
       } else if (!checks.startTempEntered || !checks.startHumidityEntered) {
         cls = 'warn';
-        title = 'Enter start conditions';
+        title = 'Step 5: Enter start conditions';
         text = 'Add the starting temperature and humidity before starting the study session.';
+        currentStepKey = 'startConditions';
       } else {
         cls = 'ok';
         title = 'Ready to start';
         const deviceText = activeDeviceName() ? ` Active device: ${activeDeviceName()}.` : '';
         text = `Everything looks ready. Click Start Study Session when the participant is ready.${deviceText}`;
+        currentStepKey = null;
       }
 
       els.studyStatusBanner.className = `banner ${cls}`;
-      els.studyStatusBanner.innerHTML = `<strong>${escapeHtml(title)}</strong><div id="studyStatusText">${escapeHtml(text)}</div>`;
+      els.studyStatusTitle.textContent = title;
+      els.studyStatusText.textContent = text;
+      renderSetupStepper(currentStepKey);
     }
 
     function updateActionStates() {
       const checks = setupChecks();
+      const sessionLocked = appState.sessionStarted || !!appState.sessionEndUtc;
       els.startSessionBtn.disabled = !(checks.spotifyConnected && checks.activeDeviceReady && checks.participantSelected && checks.playlistSelected && checks.startTempEntered && checks.startHumidityEntered) || appState.sessionStarted;
       els.endSessionBtn.disabled = !appState.sessionStarted;
       els.pauseBtn.disabled = !appState.accessToken;
       els.resumeBtn.disabled = !appState.accessToken;
       els.skipBtn.disabled = !appState.accessToken;
       els.downloadCsvBtn.disabled = appState.events.length === 0;
+      els.playlistPicker.disabled = sessionLocked;
+      els.participantId.disabled = sessionLocked;
+      els.tempStart.disabled = sessionLocked;
+      els.humidityStart.disabled = sessionLocked;
     }
 
     function updateLiveData() {
@@ -768,14 +874,9 @@
       els.currentTrack.textContent = p?.item?.name || '—';
       els.playbackState.textContent = p ? (p.is_playing ? 'playing' : 'paused / stopped') : '—';
       els.playbackPosition.textContent = p?.progress_ms != null ? `${p.progress_ms} ms` : '—';
-      els.noiseRms.textContent = appState.latestRms != null ? appState.latestRms.toFixed(5) : '—';
-
-      const pills = [];
-      if (p?.device?.name) pills.push(`<span class="status ok">Device: ${escapeHtml(p.device.name)}</span>`);
-      if (appState.sessionStartUtc) pills.push(`<span class="status">Started: ${escapeHtml(appState.sessionStartUtc)}</span>`);
-      if (appState.sessionEndUtc) pills.push(`<span class="status warn-pill">Ended: ${escapeHtml(appState.sessionEndUtc)}</span>`);
-      els.livePills.innerHTML = pills.join(' ');
+      els.noiseRms.textContent = appState.latestRms != null ? appState.latestRms.toFixed(5) : (appState.micEnabled ? 'waiting…' : 'mic off');
       updateStudyStatusBanner();
+      renderStatus();
       updateActionStates();
     }
 
@@ -1095,7 +1196,7 @@
 
     function downloadCsv() {
       const rows = [
-        ['utc','monotonic_ms','event','participant_id','playlist_uri','track_uri','track_name','playback_position_ms','is_playing','device_id','noise_rms','details_json']
+        ['utc','monotonic_ms','event','participant_id','playlist_uri','track_uri','track_name','playback_position_ms','is_playing','device_id','noise_rms']
       ];
       for (const evt of appState.events) {
         rows.push([
@@ -1109,8 +1210,7 @@
           evt.playback_position_ms,
           evt.is_playing,
           evt.device_id,
-          evt.noise_rms,
-          JSON.stringify(evt.details || {})
+          evt.noise_rms
         ]);
       }
       const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
