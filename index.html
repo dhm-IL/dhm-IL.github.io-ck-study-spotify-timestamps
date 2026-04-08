@@ -142,16 +142,36 @@
       border-radius: 6px;
     }
     .hidden { display: none; }
+    .banner {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      background: rgba(17, 24, 39, 0.95);
+    }
+    .banner strong { display:block; margin-bottom: 4px; }
+    .banner.ok { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.08); }
+    .banner.warn { border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.08); }
+    .banner.bad { border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.08); }
+    .helper { margin-top: 8px; color: var(--muted); font-size: 12px; }
+    .inline-note {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #3b4b61;
+      background: #0b1220;
+      color: #cbd5e1;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Spotify Study Logger</h1>
-    <p>
-      Single-file local web app for session-based Spotify logging with local export.
-      It uses Spotify OAuth PKCE, polls playback state, samples microphone loudness,
-      and stores JSON/CSV on the device.
-    </p>
+    <section class="banner warn" id="studyStatusBanner">
+      <strong>Checking setup…</strong>
+      <div id="studyStatusText">Please wait while the app checks Spotify and session readiness.</div>
+    </section>
 
     <div class="grid">
       <section class="card">
@@ -159,61 +179,30 @@
         <div id="authStatus"></div>
         <div id="appConfigNote" class="small muted" style="margin-bottom:8px;"></div>
 
-        <label for="clientId">Spotify Client ID</label>
-        <input id="clientId" placeholder="Paste your Spotify app client ID" />
-
-        <label for="redirectUri">Redirect URI</label>
-        <input id="redirectUri" placeholder="Usually this page URL" />
-        <div class="small muted">In your Spotify developer app, add this exact URI to the Redirect URIs list.</div>
-
-        <label for="playlistUri">Playlist URI or URL</label>
-        <input id="playlistUri" placeholder="spotify:playlist:... or https://open.spotify.com/playlist/..." />
-        <div class="row">
-          <button id="loadPlaylistsBtn" class="secondary" type="button">Load My Playlists</button>
-          <button id="loadDevicesBtn" class="secondary" type="button">Load Devices</button>
-        </div>
-        <label for="playlistPicker">Choose one of my playlists</label>
-        <select id="playlistPicker">
-          <option value="">Load playlists after connecting…</option>
-        </select>
-        <label for="devicePicker">Choose active device</label>
-        <select id="devicePicker">
-          <option value="">Use Spotify active device</option>
-        </select>
-
-        <label for="pollMs">Playback poll interval (ms)</label>
-        <input id="pollMs" type="number" min="500" step="100" value="1000" />
-
-        <label for="deviceId">Optional Spotify device ID</label>
-        <input id="deviceId" placeholder="Leave blank to use the current active device" />
-        <div class="small muted">Optional. Use this only if you know the target device ID.</div>
-
         <button id="loginBtn">Connect Spotify</button>
-        <button id="logoutBtn" class="secondary">Clear Spotify session</button>
+
+        <label for="playlistPicker">Choose playlist</label>
+        <select id="playlistPicker">
+          <option value="">Connect Spotify first…</option>
+        </select>
+        <div class="helper">After Spotify connects, your playlists will load here automatically.</div>
+
+        <input id="pollMs" type="number" min="500" step="100" value="1000" class="hidden" />
+
+        <button id="logoutBtn" class="secondary">Disconnect Spotify</button>
+        <div class="helper">Use this only if you need to switch Spotify accounts.</div>
       </section>
 
       <section class="card">
         <h2>2) Session metadata</h2>
-        <div class="row">
-          <div>
-            <label for="participantId">Participant / Session ID</label>
-            <input id="participantId" placeholder="e.g. P07-S2" />
-          </div>
-          <div>
-            <label for="lightStart">Lighting at start</label>
-            <select id="lightStart">
-              <option value="">Select...</option>
-              <option>dark</option>
-              <option>dim</option>
-              <option selected>normal</option>
-              <option>bright</option>
-            </select>
-          </div>
+        <div>
+          <label for="participantId">Participant</label>
+          <select id="participantId"></select>
         </div>
 
         <div class="row">
           <div>
-            <label for="tempStart">Temperature at start (°C)</label>
+            <label for="tempStart">Temperature at start (°F)</label>
             <input id="tempStart" type="number" step="0.1" />
           </div>
           <div>
@@ -222,12 +211,10 @@
           </div>
         </div>
 
-        <label for="notesStart">Start notes</label>
-        <textarea id="notesStart" placeholder="Any setup notes, room notes, sensor note, etc."></textarea>
 
         <div class="row">
           <div>
-            <label for="tempEnd">Temperature at end (°C)</label>
+            <label for="tempEnd">Temperature at end (°F)</label>
             <input id="tempEnd" type="number" step="0.1" />
           </div>
           <div>
@@ -236,36 +223,22 @@
           </div>
         </div>
 
-        <div class="row">
-          <div>
-            <label for="lightEnd">Lighting at end</label>
-            <select id="lightEnd">
-              <option value="">Select...</option>
-              <option>dark</option>
-              <option>dim</option>
-              <option selected>normal</option>
-              <option>bright</option>
-            </select>
-          </div>
-          <div>
-            <label for="noiseSampleSeconds">Noise sample cadence (sec)</label>
-            <input id="noiseSampleSeconds" type="number" min="1" step="1" value="1" />
-          </div>
+        <div>
+          <label for="noiseSampleSeconds">Noise sample cadence (sec)</label>
+          <input id="noiseSampleSeconds" type="number" min="1" step="1" value="1" />
         </div>
       </section>
 
       <section class="card">
         <h2>3) Permissions & live status</h2>
-        <button id="micBtn" class="secondary">Enable microphone</button>
+        <button id="micBtn" class="secondary">Enable Microphone (for noise measurement)</button>
         <div id="micStatus" class="small muted" style="margin-top:8px;">Microphone not enabled.</div>
         <div style="margin-top: 12px;" id="livePills"></div>
 
         <div class="metric"><span>Current track</span><strong id="currentTrack">—</strong></div>
-        <div class="metric"><span>Current track URI</span><strong id="currentTrackUri" class="mono">—</strong></div>
         <div class="metric"><span>Playback state</span><strong id="playbackState">—</strong></div>
         <div class="metric"><span>Playback position</span><strong id="playbackPosition">—</strong></div>
         <div class="metric"><span>Noise RMS</span><strong id="noiseRms">—</strong></div>
-        <div class="metric"><span>Estimated noise dBFS</span><strong id="noiseDbfs">—</strong></div>
         <div class="metric"><span>Event count</span><strong id="eventCount">0</strong></div>
       </section>
 
@@ -289,27 +262,26 @@
     </div>
 
     <div class="sticky-actions">
-      <button id="startSessionBtn">Start Session + Play Playlist</button>
-      <button id="pauseBtn" class="secondary">Pause</button>
-      <button id="resumeBtn" class="secondary">Resume</button>
-      <button id="skipBtn" class="warn">Skip Next</button>
-      <button id="endSessionBtn" class="danger">End Session</button>
-      <button id="downloadJsonBtn" class="secondary">Download JSON</button>
-      <button id="downloadCsvBtn" class="secondary">Download CSV</button>
-      <button id="clearBtn" class="secondary">Clear Local Session</button>
+      <button id="startSessionBtn">Start Study Session</button>
+      <button id="pauseBtn" class="secondary">Pause Music</button>
+      <button id="resumeBtn" class="secondary">Resume Music</button>
+      <button id="skipBtn" class="warn">Skip to Next Song</button>
+      <button id="endSessionBtn" class="danger">Finish Session</button>
+      <button id="downloadJsonBtn" class="secondary">Download JSON Data</button>
+      <button id="downloadCsvBtn" class="secondary">Download CSV Data</button>
+      <button id="clearBtn" class="secondary">Reset App (Erase All Data)</button>
     </div>
+    <div class="inline-note">Finish Session marks the study as done. Disconnect Spotify logs out of Spotify only. Reset App erases the saved study data and Spotify session from this browser.</div>
 
     <section class="card" style="margin-top: 16px;">
       <h2>How to use</h2>
       <ol class="small muted">
-        <li>Create a Spotify developer app and add this page URL as a Redirect URI.</li>
-        <li>Optionally hardcode <code>fixedClientId</code> and <code>fixedRedirectUri</code> near the top of this file before deployment so collaborators never have to type them.</li>
-        <li>Click <strong>Connect Spotify</strong> and log in with the participant's own Spotify Premium account.</li>
-        <li>Open Spotify somewhere on that same account so there is an active device, then use <strong>Load Devices</strong> if you want to target one explicitly.</li>
-        <li>Use <strong>Load My Playlists</strong> to pick one of the logged-in user's playlists, or paste a playlist URL manually.</li>
-        <li>Enable the microphone if you want room-noise estimates.</li>
-        <li>Enter session metadata, then click <strong>Start Session + Play Playlist</strong>.</li>
-        <li>When done, click <strong>End Session</strong>, fill end fields if needed, then download JSON or CSV and email the file.</li>
+        <li>Connect Spotify.</li>
+        <li>Open the Spotify app on the participant device, then return to this page.</li>
+        <li>Select the participant and playlist.</li>
+        <li>Enter the starting temperature and humidity.</li>
+        <li>Click <strong>Start Study Session</strong>.</li>
+        <li>At the end, click <strong>Finish Session</strong>, enter the ending temperature and humidity, then download and share the data file.</li>
       </ol>
     </section>
   </div>
@@ -325,33 +297,24 @@
     ];
 
     const els = {
-      clientId: document.getElementById('clientId'),
-      redirectUri: document.getElementById('redirectUri'),
       appConfigNote: document.getElementById('appConfigNote'),
+      studyStatusBanner: document.getElementById('studyStatusBanner'),
+      studyStatusText: document.getElementById('studyStatusText'),
       playlistUri: document.getElementById('playlistUri'),
       playlistPicker: document.getElementById('playlistPicker'),
-      loadPlaylistsBtn: document.getElementById('loadPlaylistsBtn'),
-      loadDevicesBtn: document.getElementById('loadDevicesBtn'),
-      devicePicker: document.getElementById('devicePicker'),
       pollMs: document.getElementById('pollMs'),
-      deviceId: document.getElementById('deviceId'),
       participantId: document.getElementById('participantId'),
       tempStart: document.getElementById('tempStart'),
       humidityStart: document.getElementById('humidityStart'),
-      lightStart: document.getElementById('lightStart'),
-      notesStart: document.getElementById('notesStart'),
       tempEnd: document.getElementById('tempEnd'),
       humidityEnd: document.getElementById('humidityEnd'),
-      lightEnd: document.getElementById('lightEnd'),
       noiseSampleSeconds: document.getElementById('noiseSampleSeconds'),
       authStatus: document.getElementById('authStatus'),
       micStatus: document.getElementById('micStatus'),
       currentTrack: document.getElementById('currentTrack'),
-      currentTrackUri: document.getElementById('currentTrackUri'),
       playbackState: document.getElementById('playbackState'),
       playbackPosition: document.getElementById('playbackPosition'),
       noiseRms: document.getElementById('noiseRms'),
-      noiseDbfs: document.getElementById('noiseDbfs'),
       eventCount: document.getElementById('eventCount'),
       livePills: document.getElementById('livePills'),
       logTableBody: document.getElementById('logTableBody'),
@@ -385,7 +348,6 @@
       micDataArray: null,
       micEnabled: false,
       latestRms: null,
-      latestDbfs: null,
       latestPlayback: null,
       storageKey: 'spotify-study-logger-v2',
       playlists: [],
@@ -411,20 +373,12 @@
     }
 
     function effectiveRedirectUri() {
-      return (APP_CONFIG.fixedRedirectUri || els.redirectUri.value || window.location.origin + window.location.pathname).trim();
+      return (APP_CONFIG.fixedRedirectUri || window.location.origin + window.location.pathname).trim();
     }
 
     function applyFixedConfig() {
       const fixedClient = !!APP_CONFIG.fixedClientId;
       const fixedRedirect = !!APP_CONFIG.fixedRedirectUri;
-      if (fixedClient) {
-        els.clientId.value = APP_CONFIG.fixedClientId;
-        els.clientId.readOnly = true;
-      }
-      if (fixedRedirect) {
-        els.redirectUri.value = APP_CONFIG.fixedRedirectUri;
-        els.redirectUri.readOnly = true;
-      }
       const notes = [];
       if (fixedClient) notes.push('Client ID is prefilled for this study deployment.');
       if (fixedRedirect) notes.push('Redirect URI is fixed for this deployment.');
@@ -433,19 +387,13 @@
 
     function saveConfigToLocalStorage() {
       const data = {
-        clientId: effectiveClientId(),
-        redirectUri: effectiveRedirectUri(),
         playlistUri: els.playlistUri.value.trim(),
         pollMs: els.pollMs.value,
-        deviceId: els.deviceId.value.trim(),
         participantId: els.participantId.value.trim(),
         tempStart: els.tempStart.value,
         humidityStart: els.humidityStart.value,
-        lightStart: els.lightStart.value,
-        notesStart: els.notesStart.value,
         tempEnd: els.tempEnd.value,
         humidityEnd: els.humidityEnd.value,
-        lightEnd: els.lightEnd.value,
         noiseSampleSeconds: els.noiseSampleSeconds.value,
         state: {
           sessionStarted: appState.sessionStarted,
@@ -460,6 +408,8 @@
       localStorage.setItem(appState.storageKey, JSON.stringify(data));
       renderEventTable();
       renderStatus();
+      updateStudyStatusBanner();
+      updateActionStates();
     }
 
     function loadFromLocalStorage() {
@@ -467,19 +417,13 @@
       if (!raw) return;
       try {
         const data = JSON.parse(raw);
-        els.clientId.value = data.clientId || '';
-        els.redirectUri.value = data.redirectUri || window.location.origin + window.location.pathname;
         els.playlistUri.value = data.playlistUri || '';
         els.pollMs.value = data.pollMs || '1000';
-        els.deviceId.value = data.deviceId || '';
         els.participantId.value = data.participantId || '';
         els.tempStart.value = data.tempStart || '';
         els.humidityStart.value = data.humidityStart || '';
-        els.lightStart.value = data.lightStart || 'normal';
-        els.notesStart.value = data.notesStart || '';
         els.tempEnd.value = data.tempEnd || '';
         els.humidityEnd.value = data.humidityEnd || '';
-        els.lightEnd.value = data.lightEnd || 'normal';
         els.noiseSampleSeconds.value = data.noiseSampleSeconds || '1';
         if (data.state) {
           appState.sessionStarted = !!data.state.sessionStarted;
@@ -530,7 +474,6 @@
         alert('Enter your Spotify Client ID first.');
         return;
       }
-      els.redirectUri.value = redirectUri;
       const codeVerifier = generateRandomString(96);
       appState.codeVerifier = codeVerifier;
       sessionStorage.setItem('spotify_code_verifier', codeVerifier);
@@ -623,8 +566,23 @@
     async function loadAvailableDevices() {
       const data = await spotifyFetch('/me/player/devices');
       appState.devices = Array.isArray(data?.devices) ? data.devices : [];
-      renderDevicePicker();
       return appState.devices;
+    }
+
+    async function ensureActiveDevice() {
+      const devices = await loadAvailableDevices();
+      const activeDevice = devices.find(d => d?.is_active) || null;
+      if (!activeDevice) {
+        alert('No active Spotify device was found. Open your Spotify app on the participant device, then return to this app.');
+        addEvent('no_active_device', { device_count: devices.length });
+        return null;
+      }
+      addEvent('active_device_detected', {
+        device_id: activeDevice.id || null,
+        device_name: activeDevice.name || null,
+        device_type: activeDevice.type || null
+      });
+      return activeDevice;
     }
 
     function renderPlaylistPicker() {
@@ -639,17 +597,6 @@
       els.playlistPicker.innerHTML = options.join('');
     }
 
-    function renderDevicePicker() {
-      const current = els.deviceId.value.trim();
-      const options = ['<option value="">Use Spotify active device</option>'];
-      for (const d of appState.devices) {
-        const id = d?.id || '';
-        const selected = id && id === current ? ' selected' : '';
-        const suffix = d?.is_active ? ' — active' : '';
-        options.push(`<option value="${escapeHtml(id)}"${selected}>${escapeHtml(d.name || 'Unknown device')} (${escapeHtml(d.type || 'device')})${escapeHtml(suffix)}</option>`);
-      }
-      els.devicePicker.innerHTML = options.join('');
-    }
 
     async function spotifyFetch(path, options = {}) {
       if (!appState.accessToken) throw new Error('Not connected to Spotify.');
@@ -694,9 +641,8 @@
         playlist_uri: normalizePlaylistUri(els.playlistUri.value),
         playback_position_ms: details.playback_position_ms ?? appState.latestPlayback?.progress_ms ?? null,
         is_playing: details.is_playing ?? appState.latestPlayback?.is_playing ?? null,
-        device_id: details.device_id ?? appState.latestPlayback?.device?.id ?? (els.deviceId.value.trim() || null),
+        device_id: details.device_id ?? appState.latestPlayback?.device?.id ?? null,
         noise_rms: details.noise_rms ?? appState.latestRms,
-        noise_dbfs: details.noise_dbfs ?? appState.latestDbfs,
         details
       };
       appState.events.push(evt);
@@ -729,21 +675,95 @@
       ].join(' ');
     }
 
+    function activeDeviceName() {
+      return appState.latestPlayback?.device?.name || (appState.devices.find(d => d?.is_active)?.name) || null;
+    }
+
+    function hasActiveDevice() {
+      return !!(appState.latestPlayback?.device?.is_active || appState.devices.some(d => d?.is_active));
+    }
+
+    function setupChecks() {
+      return {
+        spotifyConnected: !!appState.accessToken,
+        participantSelected: !!els.participantId.value.trim(),
+        playlistSelected: !!normalizePlaylistUri(els.playlistUri.value),
+        startTempEntered: els.tempStart.value !== '',
+        startHumidityEntered: els.humidityStart.value !== '',
+        activeDeviceReady: hasActiveDevice()
+      };
+    }
+
+    function updateStudyStatusBanner() {
+      const checks = setupChecks();
+      let cls = 'warn';
+      let title = 'Action needed before starting';
+      let text = 'Connect Spotify to begin.';
+
+      if (appState.sessionStarted) {
+        cls = 'ok';
+        title = 'Session running';
+        text = 'The study session is active. When the study is over, click Finish Session, enter ending temperature and humidity, then download the data.';
+      } else if (appState.sessionEndUtc) {
+        cls = 'ok';
+        title = 'Session finished';
+        text = 'Download the JSON or CSV data file and share it with the research team.';
+      } else if (!checks.spotifyConnected) {
+        cls = 'bad';
+        title = 'Connect Spotify first';
+        text = 'Click Connect Spotify, sign in, then return to this app.';
+      } else if (!checks.activeDeviceReady) {
+        cls = 'warn';
+        title = 'Open Spotify on the participant device';
+        text = 'No active Spotify device was found. Open the Spotify app on the participant device, start or resume playback there, then return to this app.';
+      } else if (!checks.participantSelected) {
+        cls = 'warn';
+        title = 'Select the participant';
+        text = 'Choose the participant before starting the study session.';
+      } else if (!checks.playlistSelected) {
+        cls = 'warn';
+        title = 'Choose a playlist';
+        text = 'Select a playlist from the dropdown or paste a playlist URL.';
+      } else if (!checks.startTempEntered || !checks.startHumidityEntered) {
+        cls = 'warn';
+        title = 'Enter start conditions';
+        text = 'Add the starting temperature and humidity before starting the study session.';
+      } else {
+        cls = 'ok';
+        title = 'Ready to start';
+        const deviceText = activeDeviceName() ? ` Active device: ${activeDeviceName()}.` : '';
+        text = `Everything looks ready. Click Start Study Session when the participant is ready.${deviceText}`;
+      }
+
+      els.studyStatusBanner.className = `banner ${cls}`;
+      els.studyStatusBanner.innerHTML = `<strong>${escapeHtml(title)}</strong><div id="studyStatusText">${escapeHtml(text)}</div>`;
+    }
+
+    function updateActionStates() {
+      const checks = setupChecks();
+      els.startSessionBtn.disabled = !(checks.spotifyConnected && checks.activeDeviceReady && checks.participantSelected && checks.playlistSelected && checks.startTempEntered && checks.startHumidityEntered) || appState.sessionStarted;
+      els.endSessionBtn.disabled = !appState.sessionStarted;
+      els.pauseBtn.disabled = !appState.accessToken;
+      els.resumeBtn.disabled = !appState.accessToken;
+      els.skipBtn.disabled = !appState.accessToken;
+      els.downloadJsonBtn.disabled = appState.events.length === 0;
+      els.downloadCsvBtn.disabled = appState.events.length === 0;
+    }
+
     function updateLiveData() {
       const p = appState.latestPlayback;
       els.currentTrack.textContent = p?.item?.name || '—';
-      els.currentTrackUri.textContent = p?.item?.uri || '—';
       els.playbackState.textContent = p ? (p.is_playing ? 'playing' : 'paused / stopped') : '—';
       els.playbackPosition.textContent = p?.progress_ms != null ? `${p.progress_ms} ms` : '—';
       els.noiseRms.textContent = appState.latestRms != null ? appState.latestRms.toFixed(5) : '—';
-      els.noiseDbfs.textContent = appState.latestDbfs != null ? appState.latestDbfs.toFixed(2) : '—';
 
       const pills = [];
       if (p?.device?.name) pills.push(`<span class="status ok">Device: ${escapeHtml(p.device.name)}</span>`);
-      if (p?.context?.uri) pills.push(`<span class="status">Context: ${escapeHtml(p.context.uri)}</span>`);
       if (appState.sessionStartUtc) pills.push(`<span class="status">Started: ${escapeHtml(appState.sessionStartUtc)}</span>`);
       if (appState.sessionEndUtc) pills.push(`<span class="status warn-pill">Ended: ${escapeHtml(appState.sessionEndUtc)}</span>`);
       els.livePills.innerHTML = pills.join(' ');
+      updateStudyStatusBanner();
+      updateActionStates();
     }
 
     function escapeHtml(str) {
@@ -753,11 +773,6 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
-    }
-
-    function formatDbfs(rms) {
-      if (!rms || rms <= 0) return null;
-      return 20 * Math.log10(rms);
     }
 
     async function enableMicrophone() {
@@ -778,7 +793,7 @@
         appState.micAnalyser = analyser;
         appState.micDataArray = new Float32Array(analyser.fftSize);
         appState.micEnabled = true;
-        els.micStatus.textContent = 'Microphone enabled.';
+        els.micStatus.textContent = 'Microphone enabled for noise measurement.';
         renderStatus();
         addEvent('microphone_enabled', {});
         startNoiseSampler();
@@ -796,7 +811,6 @@
       }
       const rms = Math.sqrt(sum / appState.micDataArray.length);
       appState.latestRms = rms;
-      appState.latestDbfs = formatDbfs(rms);
       updateLiveData();
       return rms;
     }
@@ -807,7 +821,7 @@
       appState.noiseTimer = setInterval(() => {
         const rms = sampleMicRms();
         if (rms != null && appState.sessionStarted) {
-          addEvent('noise_sample', { noise_rms: rms, noise_dbfs: appState.latestDbfs });
+          addEvent('noise_sample', { noise_rms: rms });
         }
       }, intervalMs);
     }
@@ -935,27 +949,23 @@
       }
     }
 
-    async function handleLoadDevices() {
-      try {
-        const devices = await loadAvailableDevices();
-        addEvent('devices_loaded', { count: devices.length });
-        if (!devices.length) {
-          alert('No Spotify devices were found. Open Spotify on the Mac, iPad, or phone first.');
-        }
-      } catch (err) {
-        addEvent('device_load_failed', { message: err.message });
-        alert(`Could not load devices: ${err.message}`);
-      }
-    }
 
     async function startSessionAndPlay() {
       const playlistUri = normalizePlaylistUri(els.playlistUri.value);
-      if (!playlistUri) {
-        alert('Enter a playlist URI or playlist URL.');
-        return;
-      }
       if (!appState.accessToken) {
         alert('Connect Spotify first.');
+        return;
+      }
+      if (!els.participantId.value.trim()) {
+        alert('Select the participant before starting.');
+        return;
+      }
+      if (!playlistUri) {
+        alert('Choose a playlist before starting.');
+        return;
+      }
+      if (els.tempStart.value === '' || els.humidityStart.value === '') {
+        alert('Enter the starting temperature and humidity before starting.');
         return;
       }
       appState.sessionStarted = true;
@@ -966,21 +976,30 @@
       addEvent('session_started', {
         participant_id: els.participantId.value.trim() || null,
         playlist_uri: playlistUri,
-        temp_start_c: valueOrNull(els.tempStart.value),
+        temp_start_f: valueOrNull(els.tempStart.value),
         humidity_start_pct: valueOrNull(els.humidityStart.value),
-        light_start: els.lightStart.value || null,
-        notes_start: els.notesStart.value || null
       });
 
       try {
+        const activeDevice = await ensureActiveDevice();
+        if (!activeDevice) {
+          appState.sessionStarted = false;
+          appState.sessionStartUtc = null;
+          saveConfigToLocalStorage();
+          renderStatus();
+          return;
+        }
         const body = { context_uri: playlistUri };
-        const deviceId = els.deviceId.value.trim();
-        const path = deviceId ? `/me/player/play?device_id=${encodeURIComponent(deviceId)}` : '/me/player/play';
+        const path = `/me/player/play?device_id=${encodeURIComponent(activeDevice.id)}`;
         await spotifyFetch(path, { method: 'PUT', body: JSON.stringify(body) });
-        addEvent('playlist_start_requested', { playlist_uri: playlistUri, device_id: deviceId || null });
+        addEvent('playlist_start_requested', { playlist_uri: playlistUri, device_id: activeDevice.id || null, device_name: activeDevice.name || null });
       } catch (err) {
+        appState.sessionStarted = false;
+        appState.sessionStartUtc = null;
         addEvent('playlist_start_request_failed', { message: err.message, playlist_uri: playlistUri });
-        alert('Spotify could not start playback. Make sure a Spotify player is open on the same account and that the account is Premium.');
+        saveConfigToLocalStorage();
+        alert('Spotify could not start playback. Make sure the Spotify app is open on the same account and that the account is Premium.');
+        return;
       }
       startPolling();
       if (appState.micEnabled) startNoiseSampler();
@@ -1021,15 +1040,22 @@
     }
 
     function endSession() {
+      if (!appState.sessionStarted) return;
+      if (els.tempEnd.value === '' || els.humidityEnd.value === '') {
+        const shouldContinue = confirm('Before finishing, please enter the ending temperature and humidity. Click OK to finish anyway, or Cancel to go back and enter them now.');
+        if (!shouldContinue) return;
+      }
       appState.sessionStarted = false;
       appState.sessionEndUtc = nowUtc();
+      if (appState.pollingTimer) clearInterval(appState.pollingTimer);
+      appState.pollingTimer = null;
       addEvent('session_ended', {
-        temp_end_c: valueOrNull(els.tempEnd.value),
+        temp_end_f: valueOrNull(els.tempEnd.value),
         humidity_end_pct: valueOrNull(els.humidityEnd.value),
-        light_end: els.lightEnd.value || null
       });
       saveConfigToLocalStorage();
       renderStatus();
+      alert('Session finished. Download the JSON or CSV data file before closing the app.');
     }
 
     function valueOrNull(v) {
@@ -1042,21 +1068,18 @@
         app_version: '1.0.0',
         spotify_client_id: effectiveClientId() || null,
         participant_id: els.participantId.value.trim() || null,
-        redirect_uri: els.redirectUri.value.trim() || null,
+        redirect_uri: effectiveRedirectUri() || null,
         playlist_uri: normalizePlaylistUri(els.playlistUri.value),
         poll_interval_ms: Number(els.pollMs.value || 1000),
         noise_sample_seconds: Number(els.noiseSampleSeconds.value || 1),
         session_start_utc: appState.sessionStartUtc,
         session_end_utc: appState.sessionEndUtc,
         metadata: {
-          temp_start_c: valueOrNull(els.tempStart.value),
+          temp_start_f: valueOrNull(els.tempStart.value),
           humidity_start_pct: valueOrNull(els.humidityStart.value),
-          light_start: els.lightStart.value || null,
-          notes_start: els.notesStart.value || null,
-          temp_end_c: valueOrNull(els.tempEnd.value),
+          temp_end_f: valueOrNull(els.tempEnd.value),
           humidity_end_pct: valueOrNull(els.humidityEnd.value),
-          light_end: els.lightEnd.value || null
-        },
+          },
         events: appState.events
       };
     }
@@ -1086,7 +1109,7 @@
 
     function downloadCsv() {
       const rows = [
-        ['utc','monotonic_ms','event','participant_id','playlist_uri','track_uri','track_name','playback_position_ms','is_playing','device_id','noise_rms','noise_dbfs','details_json']
+        ['utc','monotonic_ms','event','participant_id','playlist_uri','track_uri','track_name','playback_position_ms','is_playing','device_id','noise_rms','details_json']
       ];
       for (const evt of appState.events) {
         rows.push([
@@ -1101,7 +1124,6 @@
           evt.is_playing,
           evt.device_id,
           evt.noise_rms,
-          evt.noise_dbfs,
           JSON.stringify(evt.details || {})
         ]);
       }
@@ -1111,32 +1133,35 @@
     }
 
     function clearLocalSession() {
-      if (!confirm('Clear the saved local session and tokens from this browser?')) return;
+      if (!confirm('Reset the app and erase all saved study data and Spotify login from this browser?')) return;
       localStorage.removeItem(appState.storageKey);
       sessionStorage.removeItem('spotify_code_verifier');
       location.href = window.location.origin + window.location.pathname;
     }
 
     function logoutSpotify() {
+      if (appState.sessionStarted) {
+        alert('Finish the session before disconnecting Spotify.');
+        return;
+      }
       appState.accessToken = null;
       appState.refreshToken = null;
       appState.expiresAt = null;
       appState.playlists = [];
       appState.devices = [];
       renderPlaylistPicker();
-      renderDevicePicker();
       saveConfigToLocalStorage();
       renderStatus();
     }
 
     function wireInputs() {
       [
-        els.clientId, els.redirectUri, els.playlistUri, els.pollMs, els.deviceId,
-        els.participantId, els.tempStart, els.humidityStart, els.lightStart, els.notesStart,
-        els.tempEnd, els.humidityEnd, els.lightEnd, els.noiseSampleSeconds
+        els.playlistUri, els.pollMs,
+        els.participantId, els.tempStart, els.humidityStart,
+        els.tempEnd, els.humidityEnd, els.noiseSampleSeconds
       ].forEach(el => el.addEventListener('input', saveConfigToLocalStorage));
-      els.lightStart.addEventListener('change', saveConfigToLocalStorage);
-      els.lightEnd.addEventListener('change', saveConfigToLocalStorage);
+      els.participantId.addEventListener('change', saveConfigToLocalStorage);
+      els.playlistPicker.addEventListener('change', saveConfigToLocalStorage);
     }
 
     async function handleAuthCallbackIfPresent() {
@@ -1150,6 +1175,7 @@
         try {
           await exchangeCodeForToken(code);
           addEvent('spotify_connected', {});
+          try { await Promise.all([loadMyPlaylists(), loadAvailableDevices(), pollPlaybackOnce().catch(() => null)]); } catch (_) {}
         } catch (err) {
           alert(err.message);
         }
@@ -1161,28 +1187,26 @@
     }
 
     function initDefaults() {
-      if (!els.redirectUri.value) {
-        els.redirectUri.value = window.location.origin + window.location.pathname;
-      }
       applyFixedConfig();
+      const participantOptions = ['<option value="">Select participant…</option>'];
+      for (let i = 16; i <= 35; i++) {
+        const value = `xx${i}`;
+        const selected = els.participantId.value === value ? ' selected' : '';
+        participantOptions.push(`<option value="${value}"${selected}>${value}</option>`);
+      }
+      els.participantId.innerHTML = participantOptions.join('');
+      els.noiseSampleSeconds.value = '1';
       renderPlaylistPicker();
-      renderDevicePicker();
     }
 
     function attachListeners() {
       els.loginBtn.addEventListener('click', beginSpotifyAuth);
       els.logoutBtn.addEventListener('click', logoutSpotify);
-      els.loadPlaylistsBtn.addEventListener('click', handleLoadPlaylists);
-      els.loadDevicesBtn.addEventListener('click', handleLoadDevices);
       els.playlistPicker.addEventListener('change', () => {
         if (els.playlistPicker.value) {
           els.playlistUri.value = els.playlistPicker.value;
           saveConfigToLocalStorage();
         }
-      });
-      els.devicePicker.addEventListener('change', () => {
-        els.deviceId.value = els.devicePicker.value;
-        saveConfigToLocalStorage();
       });
       els.micBtn.addEventListener('click', enableMicrophone);
       els.startSessionBtn.addEventListener('click', startSessionAndPlay);
@@ -1202,12 +1226,22 @@
       wireInputs();
       renderEventTable();
       renderStatus();
+      updateStudyStatusBanner();
+      updateActionStates();
       updateLiveData();
       await handleAuthCallbackIfPresent();
       if (appState.accessToken) {
         startPolling();
-        try { await Promise.all([pollPlaybackOnce(), loadAvailableDevices().catch(() => []), loadMyPlaylists().catch(() => [])]); } catch (_) {}
+        try { await Promise.all([pollPlaybackOnce(), loadMyPlaylists().catch(() => []), loadAvailableDevices().catch(() => [])]); } catch (_) {}
       }
+      setInterval(() => {
+        if (appState.accessToken && !appState.sessionStarted) {
+          loadAvailableDevices().then(() => {
+            updateStudyStatusBanner();
+            updateActionStates();
+          }).catch(() => {});
+        }
+      }, 5000);
       if (appState.micEnabled) {
         startNoiseSampler();
       }
