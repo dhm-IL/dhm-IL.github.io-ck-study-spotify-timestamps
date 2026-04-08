@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Spotify Study Logger</title>
+  <title>Study Session Logger</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -167,12 +167,7 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>Spotify Study Logger</h1>
-    <p>
-      Single-file local web app for session-based Spotify logging with local export.
-      It uses Spotify OAuth PKCE, polls playback state, samples microphone loudness,
-      and stores JSON/CSV on the device.
-    </p>
+    <h1>Study Session Logger</h1>
 
     <section class="banner warn" id="studyStatusBanner">
       <strong>Checking setup…</strong>
@@ -183,11 +178,9 @@
       <section class="card">
         <h2>1) Spotify setup</h2>
         <div id="authStatus"></div>
-        <div id="appConfigNote" class="small muted" style="margin-bottom:8px;"></div>
 
+        <button id="loginBtn">Connect Spotify</button>
 
-        <label for="playlistUri">Playlist URI or URL</label>
-        <input id="playlistUri" placeholder="spotify:playlist:... or https://open.spotify.com/playlist/..." />
         <label for="playlistPicker">Choose playlist</label>
         <select id="playlistPicker">
           <option value="">Connect Spotify first…</option>
@@ -195,8 +188,8 @@
         <div class="helper">After Spotify connects, your playlists will load here automatically.</div>
 
         <input id="pollMs" type="number" min="500" step="100" value="1000" class="hidden" />
+        <input id="playlistUri" class="hidden" />
 
-        <button id="loginBtn">Connect Spotify</button>
         <button id="logoutBtn" class="secondary">Disconnect Spotify</button>
         <div class="helper">Use this only if you need to switch Spotify accounts.</div>
       </section>
@@ -231,10 +224,7 @@
           </div>
         </div>
 
-        <div>
-          <label for="noiseSampleSeconds">Noise sample cadence (sec)</label>
-          <input id="noiseSampleSeconds" type="number" min="1" step="1" value="1" />
-        </div>
+        <input id="noiseSampleSeconds" type="number" min="1" step="1" value="1" class="hidden" />
       </section>
 
       <section class="card">
@@ -275,7 +265,6 @@
       <button id="resumeBtn" class="secondary">Resume Music</button>
       <button id="skipBtn" class="warn">Skip to Next Song</button>
       <button id="endSessionBtn" class="danger">Finish Session</button>
-      <button id="downloadJsonBtn" class="secondary">Download JSON Data</button>
       <button id="downloadCsvBtn" class="secondary">Download CSV Data</button>
       <button id="clearBtn" class="secondary">Reset App (Erase All Data)</button>
     </div>
@@ -289,7 +278,7 @@
         <li>Select the participant and playlist.</li>
         <li>Enter the starting temperature and humidity.</li>
         <li>Click <strong>Start Study Session</strong>.</li>
-        <li>At the end, click <strong>Finish Session</strong>, enter the ending temperature and humidity, then download and share the data file.</li>
+        <li>At the end, click <strong>Finish Session</strong>, enter the ending temperature and humidity, then download and share the CSV file.</li>
       </ol>
     </section>
   </div>
@@ -305,7 +294,6 @@
     ];
 
     const els = {
-      appConfigNote: document.getElementById('appConfigNote'),
       studyStatusBanner: document.getElementById('studyStatusBanner'),
       studyStatusText: document.getElementById('studyStatusText'),
       playlistUri: document.getElementById('playlistUri'),
@@ -334,7 +322,6 @@
       resumeBtn: document.getElementById('resumeBtn'),
       skipBtn: document.getElementById('skipBtn'),
       endSessionBtn: document.getElementById('endSessionBtn'),
-      downloadJsonBtn: document.getElementById('downloadJsonBtn'),
       downloadCsvBtn: document.getElementById('downloadCsvBtn'),
       clearBtn: document.getElementById('clearBtn')
     };
@@ -409,12 +396,7 @@
     }
 
     function applyFixedConfig() {
-      const fixedClient = !!APP_CONFIG.fixedClientId;
-      const fixedRedirect = !!APP_CONFIG.fixedRedirectUri;
-      const notes = [];
-      if (fixedClient) notes.push('Client ID is prefilled for this study deployment.');
-      if (fixedRedirect) notes.push('Redirect URI is fixed for this deployment.');
-      els.appConfigNote.textContent = notes.join(' ');
+      // Fixed Spotify config is intentionally hidden from the operator UI.
     }
 
     function saveConfigToLocalStorage() {
@@ -739,7 +721,7 @@
       } else if (appState.sessionEndUtc) {
         cls = 'ok';
         title = 'Session finished';
-        text = 'Download the JSON or CSV data file and share it with the research team.';
+        text = 'Download the CSV data file and share it with the research team.';
       } else if (!checks.spotifyConnected) {
         cls = 'bad';
         title = 'Connect Spotify first';
@@ -755,7 +737,7 @@
       } else if (!checks.playlistSelected) {
         cls = 'warn';
         title = 'Choose a playlist';
-        text = 'Select a playlist from the dropdown or paste a playlist URL.';
+        text = 'Select a playlist from the dropdown before starting the study session.';
       } else if (!checks.startTempEntered || !checks.startHumidityEntered) {
         cls = 'warn';
         title = 'Enter start conditions';
@@ -778,7 +760,6 @@
       els.pauseBtn.disabled = !appState.accessToken;
       els.resumeBtn.disabled = !appState.accessToken;
       els.skipBtn.disabled = !appState.accessToken;
-      els.downloadJsonBtn.disabled = appState.events.length === 0;
       els.downloadCsvBtn.disabled = appState.events.length === 0;
     }
 
@@ -1087,33 +1068,11 @@
       });
       saveConfigToLocalStorage();
       renderStatus();
-      alert('Session finished. Download the JSON or CSV data file before closing the app.');
+      alert('Session finished. Download the CSV data file before closing the app.');
     }
 
     function valueOrNull(v) {
       return v === '' || v == null ? null : Number(v);
-    }
-
-    function sessionPayload() {
-      return {
-        exported_at_utc: nowUtc(),
-        app_version: '1.0.0',
-        spotify_client_id: effectiveClientId() || null,
-        participant_id: els.participantId.value.trim() || null,
-        redirect_uri: effectiveRedirectUri() || null,
-        playlist_uri: normalizePlaylistUri(els.playlistUri.value),
-        poll_interval_ms: Number(els.pollMs.value || 1000),
-        noise_sample_seconds: Number(els.noiseSampleSeconds.value || 1),
-        session_start_utc: appState.sessionStartUtc,
-        session_end_utc: appState.sessionEndUtc,
-        metadata: {
-          temp_start_f: valueOrNull(els.tempStart.value),
-          humidity_start_pct: valueOrNull(els.humidityStart.value),
-          temp_end_f: valueOrNull(els.tempEnd.value),
-          humidity_end_pct: valueOrNull(els.humidityEnd.value),
-          },
-        events: appState.events
-      };
     }
 
     function downloadBlob(filename, type, content) {
@@ -1126,11 +1085,6 @@
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    }
-
-    function downloadJson() {
-      const id = els.participantId.value.trim() || 'session';
-      downloadBlob(`${id}-spotify-study-log.json`, 'application/json', JSON.stringify(sessionPayload(), null, 2));
     }
 
     function csvEscape(v) {
@@ -1188,7 +1142,7 @@
 
     function wireInputs() {
       [
-        els.playlistUri, els.pollMs,
+        els.pollMs,
         els.participantId, els.tempStart, els.humidityStart,
         els.tempEnd, els.humidityEnd, els.noiseSampleSeconds
       ].forEach(el => el.addEventListener('input', saveConfigToLocalStorage));
@@ -1246,7 +1200,6 @@
       els.resumeBtn.addEventListener('click', resumePlayback);
       els.skipBtn.addEventListener('click', skipNext);
       els.endSessionBtn.addEventListener('click', endSession);
-      els.downloadJsonBtn.addEventListener('click', downloadJson);
       els.downloadCsvBtn.addEventListener('click', downloadCsv);
       els.clearBtn.addEventListener('click', clearLocalSession);
     }
