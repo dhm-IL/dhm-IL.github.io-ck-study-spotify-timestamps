@@ -24,28 +24,29 @@
       color: var(--text);
     }
     .wrap {
-      max-width: 1200px;
+      max-width: 900px;
       margin: 0 auto;
-      padding: 24px;
+      padding: 18px;
     }
-    h1, h2, h3 { margin: 0 0 12px; }
+    h1, h2, h3 { margin: 0 0 10px; }
     p { color: var(--muted); }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 16px;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: start;
     }
     .card {
       background: rgba(17, 24, 39, 0.95);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px;
+      border-radius: 14px;
+      padding: 12px;
       box-shadow: 0 10px 20px rgba(0,0,0,0.25);
     }
     label {
       display: block;
-      font-size: 14px;
-      margin: 12px 0 6px;
+      font-size: 13px;
+      margin: 8px 0 4px;
       color: #cbd5e1;
     }
     input, select, textarea, button {
@@ -54,8 +55,8 @@
       border: 1px solid var(--border);
       background: var(--panel-2);
       color: var(--text);
-      padding: 10px 12px;
-      font-size: 14px;
+      padding: 8px 10px;
+      font-size: 13px;
     }
     textarea { min-height: 78px; resize: vertical; }
     button {
@@ -64,7 +65,7 @@
       border: none;
       background: var(--accent);
       color: #06240e;
-      margin-top: 12px;
+      margin-top: 8px;
     }
     button.secondary {
       background: #334155;
@@ -80,13 +81,13 @@
     .row {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
+      gap: 8px;
     }
     .status {
       display: inline-block;
-      padding: 6px 10px;
+      padding: 4px 8px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       margin-right: 8px;
       margin-bottom: 8px;
@@ -101,7 +102,7 @@
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 8px;
-      padding: 10px 12px;
+      padding: 8px 10px;
       background: #0b1220;
       border-radius: 10px;
       border: 1px solid #223046;
@@ -118,7 +119,7 @@
     }
     th, td {
       border-bottom: 1px solid #243244;
-      padding: 8px;
+      padding: 6px 8px;
       text-align: left;
       vertical-align: top;
     }
@@ -129,12 +130,12 @@
       background: rgba(15, 23, 42, 0.95);
       backdrop-filter: blur(10px);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 12px;
-      margin-top: 16px;
+      border-radius: 14px;
+      padding: 10px;
+      margin-top: 12px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
     }
     code {
       background: rgba(255,255,255,0.08);
@@ -144,16 +145,16 @@
     .hidden { display: none; }
     .banner {
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 14px 16px;
-      margin-bottom: 16px;
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
       background: rgba(17, 24, 39, 0.95);
     }
     .banner strong { display:block; margin-bottom: 4px; }
     .banner.ok { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.08); }
     .banner.warn { border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.08); }
     .banner.bad { border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.08); }
-    .helper { margin-top: 8px; color: var(--muted); font-size: 12px; }
+    .helper { margin-top: 6px; color: var(--muted); font-size: 11px; }
     .inline-note {
       margin-top: 8px;
       padding: 10px 12px;
@@ -171,15 +172,15 @@
     }
     .stepper {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
       margin-top: 10px;
     }
     .step-chip {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 7px 10px;
+      gap: 6px;
+      padding: 5px 8px;
       border-radius: 999px;
       border: 1px solid var(--border);
       background: #0b1220;
@@ -200,38 +201,111 @@
     .status-strip {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin: 0 0 14px;
+      gap: 6px;
+      margin: 0 0 10px;
     }
     .section-intro {
-      margin: -2px 0 12px;
+      margin: -2px 0 10px;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
     }
     .card.compact {
       padding-top: 14px;
     }
     .compact-metrics {
       display: grid;
-      gap: 10px;
-      margin-top: 10px;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
     }
     .metric-line {
-      padding: 10px 12px;
+      padding: 8px 10px;
       background: #0b1220;
       border-radius: 10px;
       border: 1px solid #223046;
-      font-size: 14px;
+      font-size: 13px;
       color: #cbd5e1;
+      min-width: 0;
     }
     .metric-line strong {
       color: var(--text);
     }
     .actions-helper {
-      margin-top: 10px;
+      margin-top: 8px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       text-align: center;
+    }
+
+
+    .setup-layout {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr 1.2fr;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+    .setup-column {
+      min-width: 0;
+    }
+    .setup-stack {
+      display: grid;
+      gap: 8px;
+    }
+    .setup-stack button {
+      margin-top: 0;
+    }
+    .setup-pair {
+      display: grid;
+      gap: 10px;
+    }
+    .field-block {
+      background: #0b1220;
+      border: 1px solid #223046;
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .field-block h3 {
+      font-size: 13px;
+      margin: 0 0 8px;
+      color: #cbd5e1;
+    }
+    .control-subrow {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .setup-layout .helper {
+      margin-top: 4px;
+    }
+
+    @media (max-width: 860px) {
+      .wrap {
+        max-width: 100%;
+        padding: 14px;
+      }
+      .grid,
+      .setup-layout {
+        grid-template-columns: 1fr;
+      }
+      .setup-stack button {
+        width: 100%;
+      }
+      .compact-metrics {
+        grid-template-columns: 1fr;
+      }
+      .sticky-actions {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .row,
+      .control-subrow,
+      .sticky-actions {
+        grid-template-columns: 1fr;
+      }
+      
     }
 
   </style>
@@ -247,62 +321,61 @@
     </section>
 
     <div class="grid">
-      <section class="card">
-        <h2>1) Spotify setup</h2>
-        <p class="section-intro">Complete the highlighted step, then move to the next one.</p>
+      <section class="card" style="grid-column: 1 / -1;">
+        <h2>Setup</h2>
+        <p class="section-intro">Connect Spotify, choose the participant and playlist, then enter room conditions.</p>
         <div id="statusStrip" class="status-strip"></div>
 
-        <button id="loginBtn">Connect Spotify</button>
+        <div class="setup-layout">
+          <div class="setup-column setup-stack">
+            <div>
+              <label>&nbsp;</label>
+              <button id="loginBtn">Connect Spotify</button>
+            </div>
+            <div>
+              <button id="logoutBtn" class="secondary">Disconnect Spotify</button>
+            </div>
+          </div>
 
-        <label for="playlistPicker">Choose playlist</label>
-        <select id="playlistPicker">
-          <option value="">Connect Spotify first…</option>
-        </select>
-        <div class="helper">After Spotify connects, your playlists will load here automatically.</div>
+          <div class="setup-column setup-pair">
+            <div class="field-block">
+              <h3>Playlist</h3>
+              <select id="playlistPicker">
+                <option value="">Connect Spotify first…</option>
+              </select>
+              <div class="helper">Your playlists load here after Spotify connects.</div>
+            </div>
+            <div class="field-block">
+              <h3>Participant</h3>
+              <select id="participantId"></select>
+            </div>
+          </div>
+
+          <div class="setup-column setup-pair">
+            <div class="field-block">
+              <h3>Start conditions</h3>
+              <div class="control-subrow">
+                <input id="tempStart" type="number" step="0.1" placeholder="Temp °F" />
+                <input id="humidityStart" type="number" step="0.1" placeholder="Humidity %" />
+              </div>
+            </div>
+            <div class="field-block">
+              <h3>End conditions</h3>
+              <div class="control-subrow">
+                <input id="tempEnd" type="number" step="0.1" placeholder="Temp °F" />
+                <input id="humidityEnd" type="number" step="0.1" placeholder="Humidity %" />
+              </div>
+            </div>
+          </div>
+        </div>
 
         <input id="pollMs" type="number" min="500" step="100" value="1000" class="hidden" />
         <input id="playlistUri" class="hidden" />
-
-        <button id="logoutBtn" class="secondary">Disconnect Spotify</button>
-        <div class="helper">Use this only if you need to switch Spotify accounts.</div>
-      </section>
-
-      <section class="card">
-        <h2>2) Session details</h2>
-        <p class="section-intro">Only required fields are shown before the session starts.</p>
-        <div>
-          <label for="participantId">Participant</label>
-          <select id="participantId"></select>
-        </div>
-
-        <div class="row">
-          <div>
-            <label for="tempStart">Temperature at start (°F)</label>
-            <input id="tempStart" type="number" step="0.1" />
-          </div>
-          <div>
-            <label for="humidityStart">Humidity at start (%)</label>
-            <input id="humidityStart" type="number" step="0.1" />
-          </div>
-        </div>
-
-
-        <div class="row">
-          <div>
-            <label for="tempEnd">Temperature at end (°F)</label>
-            <input id="tempEnd" type="number" step="0.1" />
-          </div>
-          <div>
-            <label for="humidityEnd">Humidity at end (%)</label>
-            <input id="humidityEnd" type="number" step="0.1" />
-          </div>
-        </div>
-
         <input id="noiseSampleSeconds" type="number" min="1" step="1" value="1" class="hidden" />
       </section>
 
-      <section class="card compact">
-        <h2>3) Live session</h2>
+      <section class="card compact" style="grid-column: 1 / -1;">
+        <h2>Live session</h2>
         <p class="section-intro">Use the microphone only if you want noise measurements.</p>
         <button id="micBtn" class="secondary">Enable Microphone (for noise measurement)</button>
         <div id="micStatus" class="small muted" style="margin-top:8px;">Microphone not enabled.</div>
@@ -314,7 +387,7 @@
       </section>
 
       <section class="card" style="grid-column: 1 / -1;">
-        <h2>4) Session log preview</h2>
+        <h2>Session log preview</h2>
         <p class="small">Newest events first. Downloads include the full session and metadata.</p>
         <div style="overflow:auto; max-height: 420px; border:1px solid var(--border); border-radius: 12px;">
           <table>
@@ -323,24 +396,23 @@
                 <th>UTC</th>
                 <th>Event</th>
                 <th>Track URI</th>
-                              </tr>
+              </tr>
             </thead>
             <tbody id="logTableBody"></tbody>
           </table>
         </div>
+        <div class="sticky-actions">
+          <button id="startSessionBtn">Start Study Session</button>
+          <button id="pauseBtn" class="secondary">Pause Music</button>
+          <button id="resumeBtn" class="secondary">Resume Music</button>
+          <button id="skipBtn" class="warn">Skip to Next Song</button>
+          <button id="endSessionBtn" class="danger">Finish Session</button>
+          <button id="downloadCsvBtn" class="secondary">Download CSV Data</button>
+          <button id="clearBtn" class="secondary">Reset App (Erase All Data)</button>
+        </div>
+        <div class="actions-helper">Session controls stay below the log so the main setup area stays focused and compact.</div>
       </section>
     </div>
-
-    <div class="sticky-actions">
-      <button id="startSessionBtn">Start Study Session</button>
-      <button id="pauseBtn" class="secondary">Pause Music</button>
-      <button id="resumeBtn" class="secondary">Resume Music</button>
-      <button id="skipBtn" class="warn">Skip to Next Song</button>
-      <button id="endSessionBtn" class="danger">Finish Session</button>
-      <button id="downloadCsvBtn" class="secondary">Download CSV Data</button>
-      <button id="clearBtn" class="secondary">Reset App (Erase All Data)</button>
-    </div>
-    <div class="actions-helper">The app unlocks the next step automatically and prevents starting until required information is complete.</div>
 
     <section class="card" style="margin-top: 16px;">
       <h2>Quick flow</h2>
@@ -410,6 +482,7 @@
       micEnabled: false,
       latestRms: null,
       latestPlayback: null,
+      pendingDeviceChange: null,
       storageKey: 'spotify-study-logger-v2',
       playlists: [],
       devices: []
@@ -954,6 +1027,54 @@
       return playback?.item?.duration_ms ?? null;
     }
 
+    function maybeLogStableDeviceChange(prevPlayback, newPlayback) {
+      const prevDevice = prevPlayback?.device;
+      const nextDevice = newPlayback?.device;
+
+      if (!prevDevice || !nextDevice) {
+        appState.pendingDeviceChange = null;
+        return;
+      }
+
+      if (!prevPlayback?.is_playing || !newPlayback?.is_playing) {
+        appState.pendingDeviceChange = null;
+        return;
+      }
+
+      const prevName = (prevDevice.name || '').trim();
+      const nextName = (nextDevice.name || '').trim();
+
+      if (!prevName || !nextName || prevName === nextName) {
+        appState.pendingDeviceChange = null;
+        return;
+      }
+
+      const pending = appState.pendingDeviceChange;
+      if (!pending || pending.name !== nextName) {
+        appState.pendingDeviceChange = {
+          name: nextName,
+          id: nextDevice.id || null,
+          detectedAt: Date.now()
+        };
+        return;
+      }
+
+      if (Date.now() - pending.detectedAt < 2000) {
+        return;
+      }
+
+      addEvent('device_changed', {
+        track_uri: newPlayback.item?.uri,
+        track_name: newPlayback.item?.name,
+        device_id: nextDevice.id,
+        device_name: nextName,
+        previous_device_name: prevName,
+        playback_position_ms: newPlayback.progress_ms
+      });
+
+      appState.pendingDeviceChange = null;
+    }
+
     function detectPlaybackEvents(newPlayback) {
       const prev = appState.lastPlayback;
       appState.latestPlayback = newPlayback;
@@ -1021,15 +1142,7 @@
         });
       }
 
-      if (prev?.device?.id !== newPlayback?.device?.id && newPlayback?.device?.id) {
-        addEvent('device_changed', {
-          track_uri: newPlayback.item?.uri,
-          track_name: newPlayback.item?.name,
-          device_id: newPlayback.device.id,
-          device_name: newPlayback.device.name,
-          playback_position_ms: newPlayback.progress_ms
-        });
-      }
+      maybeLogStableDeviceChange(prev, newPlayback);
 
       appState.lastPlayback = newPlayback;
       saveConfigToLocalStorage();
@@ -1086,6 +1199,7 @@
       appState.sessionStartUtc = nowUtc();
       appState.sessionEndUtc = null;
       appState.lastPlayback = null;
+      appState.pendingDeviceChange = null;
       saveConfigToLocalStorage();
       addEvent('session_started', {
         participant_id: els.participantId.value.trim() || null,
@@ -1161,6 +1275,7 @@
       }
       appState.sessionStarted = false;
       appState.sessionEndUtc = nowUtc();
+      appState.pendingDeviceChange = null;
       if (appState.pollingTimer) clearInterval(appState.pollingTimer);
       appState.pollingTimer = null;
       addEvent('session_ended', {
