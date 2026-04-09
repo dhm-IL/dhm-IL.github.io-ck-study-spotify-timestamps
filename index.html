@@ -432,7 +432,7 @@
       <section class="card" style="grid-column: 1 / -1;">
         <h2>Session log preview</h2>
         <p class="small">Newest events on top. Downloads include the full session and metadata.</p>
-        <div style="overflow:auto; max-height: 220px; border:1px solid var(--border); border-radius: 12px;">
+        <div style="overflow:auto; max-height: 320px; border:1px solid var(--border); border-radius: 12px;">
            <table>
              <thead>
                <tr>
@@ -952,33 +952,27 @@
         currentStepKey = null;
       } else if (!checks.spotifyConnected) {
         cls = 'bad';
-        title = 'Step 1: Connect Spotify';
-        text = 'Click Connect Spotify and sign in. If the wrong account is shown, use Switch Spotify Account first.';
+        title = 'Step 1: Click Connect Spotify and sign in. If the wrong account is shown, use Switch Spotify Account first.';
         currentStepKey = 'spotifyConnected';
       } else if (!checks.activeDeviceReady) {
         cls = 'warn';
-        title = 'Step 2: Open Spotify on the playback device';
-        text = 'Open the Spotify app on the playback device and start/pause playback there.';
+        title = 'Step 2: Open the Spotify app on the playback device and start/pause playback there.';
         currentStepKey = 'activeDeviceReady';
       } else if (!checks.participantSelected) {
         cls = 'warn';
-        title = 'Step 3: Select the participant';
-        text = 'Choose the participant before starting the study session.';
+        title = 'Step 3: Choose the participant ID.';
         currentStepKey = 'participantSelected';
       } else if (!checks.playlistSelected) {
         cls = 'warn';
-        title = 'Step 4: Choose a playlist';
-        text = 'Pick the playlist you want to use for this session.';
+        title = 'Step 4: Pick the playlist for this session.';
         currentStepKey = 'playlistSelected';
       } else if (!checks.startTempEntered || !checks.startHumidityEntered) {
         cls = 'warn';
-        title = 'Step 5: Enter start conditions';
-        text = 'Add the starting temperature and humidity before starting the study session.';
+        title = 'Step 5: Add the starting temperature and humidity';
         currentStepKey = 'startConditions';
       } else if (!appState.micEnabled) {
         cls = 'warn';
-        title = 'Step 6: Enable Microphone';
-        text = 'Microphone is only used for room noise measurements.';
+        title = 'Step 6: Enable Microphone to capture room noise measurements';
         currentStepKey = 'enableMic';
       } else {
         cls = 'ok';
