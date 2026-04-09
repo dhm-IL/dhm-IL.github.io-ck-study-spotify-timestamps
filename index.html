@@ -74,6 +74,31 @@
     }
     button.warn { background: var(--warn); color: #1f1300; }
     button.danger { background: var(--danger); color: white; }
+
+    button.primary {
+      background: #22c55e;
+      color: #06240e;
+    }
+    button.info {
+      background: #3b82f6;
+      color: white;
+      border: 1px solid #2563eb;
+    }
+    button.success-outline {
+      background: transparent;
+      border: 1px solid #22c55e;
+      color: #86efac;
+    }
+    button.info-outline {
+      background: transparent;
+      border: 1px solid #3b82f6;
+      color: #93c5fd;
+    }
+    button.danger-outline {
+      background: transparent;
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+    }
     button:disabled {
       opacity: 0.55;
       cursor: not-allowed;
@@ -313,6 +338,14 @@
     .setup-layout .helper {
       margin-top: 4px;
     }
+    .spotify-buttons {
+      display: grid;
+      gap: 8px;
+     }
+
+     .spotify-buttons button {
+       margin-top: 0;
+    }
 
     @media (max-width: 860px) {
       .wrap {
@@ -361,19 +394,19 @@
     <div class="grid">
       <section class="card" style="grid-column: 1 / -1;">
         <h2>Setup</h2>
-        <p class="section-intro">Connect Spotify, choose the participant and playlist, then enter room conditions.</p>
+        
         <div id="statusStrip" class="status-strip"></div>
 
         <div class="setup-layout">
           <div class="setup-column setup-stack">
-            <div>
-              <label>&nbsp;</label>
-              <button id="loginBtn">Connect Spotify</button>
-            </div>
-            <div>
-              <button id="logoutBtn" class="secondary">Switch Spotify Account</button>
-              <div class="helper">Use this when the next participant needs a different Spotify account.</div>
-            </div>
+		<div class="spotify-buttons">
+		  <button id="loginBtn">Connect to Spotify</button>
+		  <button id="logoutBtn" class="secondary">Disconnect from Spotify</button>
+		  <button id="spotifyLogoutBtn" class="secondary">Log out of Spotify (browser)</button>
+	        </div>
+	        <div class="helper">
+		  To use a different account, disconnect and log out of Spotify, then reconnect.
+      	        </div>
           </div>
 
           <div class="setup-column setup-pair">
@@ -414,7 +447,6 @@
 
       <section class="card compact" style="grid-column: 1 / -1;">
         <h2>Live session</h2>
-        <p class="section-intro">Use the microphone only if you want noise measurements.</p>
         <div class="live-session-layout">
           <div class="live-session-left">
             <button id="micBtn" class="secondary compact-btn">Enable Microphone</button>
@@ -448,16 +480,16 @@
             <h2>Controls</h2>
             <div class="controls-grid">
               <div class="control-row top">
-                <button id="startSessionBtn">Start Study Session</button>
+                <button id="startSessionBtn" class="primary">Start Study Session</button>
                 <button id="pauseBtn" class="secondary">Pause</button>
-                <button id="resumeBtn" class="secondary">Resume</button>
+                <button id="resumeBtn" class="info">Resume</button>
                 <button id="skipBtn" class="warn">Next Song</button>
               </div>
               <div class="control-row bottom">
                 <button id="endSessionBtn" class="danger">Finish Session</button>
-                <button id="downloadCsvBtn" class="secondary">Download CSV Data</button>
-                <button id="newSessionBtn" class="secondary">Start New Session</button>
-                <button id="clearBtn" class="secondary">Reset App (Clear Everything)</button>
+                <button id="downloadCsvBtn" class="success-outline">Download CSV Data</button>
+                <button id="newSessionBtn" class="info-outline">Start New Session</button>
+                <button id="clearBtn" class="danger-outline">Reset App (Clear Everything)</button>
               </div>
             </div>
           </div>
@@ -500,6 +532,7 @@
       logTableBody: document.getElementById('logTableBody'),
       loginBtn: document.getElementById('loginBtn'),
       logoutBtn: document.getElementById('logoutBtn'),
+      spotifyLogoutBtn: document.getElementById('spotifyLogoutBtn'),
       micBtn: document.getElementById('micBtn'),
       startSessionBtn: document.getElementById('startSessionBtn'),
       pauseBtn: document.getElementById('pauseBtn'),
@@ -981,6 +1014,20 @@
       renderSetupStepper(currentStepKey);
     }
 
+    function updateControlVisibility() {
+      const running = appState.sessionStarted;
+      const finished = !!appState.sessionEndUtc;
+
+      els.startSessionBtn.style.display = (!running && !finished) ? 'block' : 'none';
+      els.pauseBtn.style.display = running ? 'block' : 'none';
+      els.resumeBtn.style.display = running ? 'block' : 'none';
+      els.skipBtn.style.display = running ? 'block' : 'none';
+      els.endSessionBtn.style.display = running ? 'block' : 'none';
+      els.downloadCsvBtn.style.display = (finished || appState.events.length > 0) ? 'block' : 'none';
+      els.newSessionBtn.style.display = (!running && appState.events.length > 0) ? 'block' : 'none';
+      els.clearBtn.style.display = running ? 'none' : 'block';
+    }
+
     function updateActionStates() {
       const checks = setupChecks();
       const sessionLocked = appState.sessionStarted || !!appState.sessionEndUtc;
@@ -991,10 +1038,13 @@
       els.skipBtn.disabled = !appState.accessToken;
       els.downloadCsvBtn.disabled = appState.events.length === 0;
       els.newSessionBtn.disabled = appState.sessionStarted || appState.events.length === 0;
+      els.logoutBtn.disabled = !appState.accessToken || appState.sessionStarted;
+      els.spotifyLogoutBtn.disabled = appState.sessionStarted;
       els.playlistPicker.disabled = sessionLocked;
       els.participantId.disabled = sessionLocked;
       els.tempStart.disabled = sessionLocked;
       els.humidityStart.disabled = sessionLocked;
+      updateControlVisibility();
     }
 
     function updateLiveData() {
@@ -1006,6 +1056,7 @@
       updateStudyStatusBanner();
       renderStatus();
       updateActionStates();
+      updateControlVisibility();
     }
 
     function escapeHtml(str) {
@@ -1439,13 +1490,21 @@
         alert('Finish the session before disconnecting Spotify.');
         return;
       }
+      if (appState.pollingTimer) clearInterval(appState.pollingTimer);
+      appState.pollingTimer = null;
+      appState.pendingDeviceChange = null;
+      appState.lastPlayback = null;
+      appState.latestPlayback = null;
       appState.accessToken = null;
       appState.refreshToken = null;
       appState.expiresAt = null;
       appState.playlists = [];
       appState.devices = [];
+      els.playlistPicker.value = '';
+      els.playlistUri.value = '';
       renderPlaylistPicker();
       saveConfigToLocalStorage();
+      updateLiveData();
       renderStatus();
     }
 
@@ -1497,6 +1556,9 @@
     function attachListeners() {
       els.loginBtn.addEventListener('click', beginSpotifyAuth);
       els.logoutBtn.addEventListener('click', logoutSpotify);
+      els.spotifyLogoutBtn.addEventListener('click', () => {
+        window.open('https://accounts.spotify.com/en/logout', '_blank');
+      });
       els.playlistPicker.addEventListener('change', () => {
         if (els.playlistPicker.value) {
           els.playlistUri.value = els.playlistPicker.value;
