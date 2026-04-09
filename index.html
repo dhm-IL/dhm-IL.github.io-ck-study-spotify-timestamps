@@ -429,8 +429,8 @@
 
       <section class="card" style="grid-column: 1 / -1;">
         <h2>Session log preview</h2>
-        <p class="small">Newest events first. Downloads include the full session and metadata.</p>
-        <div style="overflow:auto; max-height: 420px; border:1px solid var(--border); border-radius: 12px;">
+        <p class="small">Newest events on top. Downloads include the full session and metadata.</p>
+        <div style="overflow:auto; max-height: 320px; border:1px solid var(--border); border-radius: 12px;">
            <table>
              <thead>
                <tr>
@@ -1030,8 +1030,7 @@
         appState.micContext = audioContext;
         appState.micAnalyser = analyser;
         appState.micDataArray = new Float32Array(analyser.fftSize);
-        appState.micEnabled = true;
-        els.micStatus.textContent = 'Microphone enabled for noise measurement.';
+        appState.micEnabled = true;        
         renderStatus();
         addEvent('microphone_enabled', {});
         startNoiseSampler();
