@@ -159,7 +159,7 @@
       gap: 10px;
     }
     .control-row.top {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .control-row.bottom {
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -481,8 +481,7 @@
             <div class="controls-grid">
               <div class="control-row top">
                 <button id="startSessionBtn" class="primary">Start Study Session</button>
-                <button id="pauseBtn" class="secondary">Pause</button>
-                <button id="resumeBtn" class="info">Resume</button>
+                <button id="togglePlaybackBtn" class="secondary">Pause</button>
                 <button id="skipBtn" class="warn">Next Song</button>
               </div>
               <div class="control-row bottom">
@@ -535,8 +534,7 @@
       spotifyLogoutBtn: document.getElementById('spotifyLogoutBtn'),
       micBtn: document.getElementById('micBtn'),
       startSessionBtn: document.getElementById('startSessionBtn'),
-      pauseBtn: document.getElementById('pauseBtn'),
-      resumeBtn: document.getElementById('resumeBtn'),
+      togglePlaybackBtn: document.getElementById('togglePlaybackBtn'),
       skipBtn: document.getElementById('skipBtn'),
       endSessionBtn: document.getElementById('endSessionBtn'),
       downloadCsvBtn: document.getElementById('downloadCsvBtn'),
@@ -563,6 +561,7 @@
       latestRms: null,
       latestPlayback: null,
       pendingDeviceChange: null,
+      suppressPlaybackEventsUntil: 0,
       storageKey: 'spotify-study-logger-v2',
       playlists: [],
       devices: []
@@ -943,7 +942,8 @@
         activeDeviceReady: checks.activeDeviceReady,
         participantSelected: checks.participantSelected,
         playlistSelected: checks.playlistSelected,
-        startConditions: checks.startTempEntered && checks.startHumidityEntered
+        startConditions: checks.startTempEntered && checks.startHumidityEntered,
+        enableMic: checks.enableMic
       };
       els.setupStepper.innerHTML = steps.map(([key, label], index) => {
         let cls = 'step-chip';
@@ -1033,8 +1033,9 @@
       const sessionLocked = appState.sessionStarted || !!appState.sessionEndUtc;
       els.startSessionBtn.disabled = !(checks.spotifyConnected && checks.activeDeviceReady && checks.participantSelected && checks.playlistSelected && checks.startTempEntered && checks.startHumidityEntered) || appState.sessionStarted;
       els.endSessionBtn.disabled = !appState.sessionStarted;
-      els.pauseBtn.disabled = !appState.accessToken;
-      els.resumeBtn.disabled = !appState.accessToken;
+      els.togglePlaybackBtn.disabled = !appState.accessToken || !appState.sessionStarted;
+      els.togglePlaybackBtn.textContent = appState.latestPlayback?.is_playing === false ? 'Resume' : 'Pause';
+      els.togglePlaybackBtn.className = appState.latestPlayback?.is_playing === false ? 'info' : 'secondary';
       els.skipBtn.disabled = !appState.accessToken;
       els.downloadCsvBtn.disabled = appState.events.length === 0;
       els.newSessionBtn.disabled = appState.sessionStarted || appState.events.length === 0;
@@ -1112,7 +1113,7 @@
       const intervalMs = Math.max(1, Number(els.noiseSampleSeconds.value || 1)) * 1000;
       appState.noiseTimer = setInterval(() => {
         const rms = sampleMicRms();
-        if (rms != null && appState.sessionStarted) {
+        if (rms != null && appState.sessionStarted && appState.latestPlayback?.is_playing) {
           addEvent('noise_sample', { noise_rms: rms });
         }
       }, intervalMs);
@@ -1183,6 +1184,14 @@
     function detectPlaybackEvents(newPlayback) {
       const prev = appState.lastPlayback;
       appState.latestPlayback = newPlayback;
+
+      if (Date.now() < (appState.suppressPlaybackEventsUntil || 0)) {
+        appState.lastPlayback = newPlayback;
+        updateLiveData();
+        saveConfigToLocalStorage();
+        return;
+      }
+
       updateLiveData();
 
       if (!newPlayback) {
@@ -1305,6 +1314,7 @@
       appState.sessionEndUtc = null;
       appState.lastPlayback = null;
       appState.pendingDeviceChange = null;
+      appState.suppressPlaybackEventsUntil = 0;
       saveConfigToLocalStorage();
       addEvent('session_started', {
         participant_id: els.participantId.value.trim() || null,
@@ -1361,6 +1371,15 @@
       }
     }
 
+    async function togglePlayback() {
+      const isPlaying = !!appState.latestPlayback?.is_playing;
+      if (isPlaying) {
+        await pausePlayback();
+      } else {
+        await resumePlayback();
+      }
+    }
+
     async function skipNext() {
       try {
         await spotifyFetch('/me/player/next', { method: 'POST' });
@@ -1381,6 +1400,7 @@
       appState.sessionStarted = false;
       appState.sessionEndUtc = nowUtc();
       appState.pendingDeviceChange = null;
+      appState.suppressPlaybackEventsUntil = Date.now() + 1500;
       if (appState.pollingTimer) clearInterval(appState.pollingTimer);
       appState.pollingTimer = null;
       addEvent('session_ended', {
@@ -1454,8 +1474,10 @@
       appState.sessionEndUtc = null;
       appState.events = [];
       appState.lastPlayback = null;
+      appState.latestPlayback = null;
       appState.pendingDeviceChange = null;
       appState.latestRms = null;
+      appState.suppressPlaybackEventsUntil = Date.now() + 2000;
 
       els.participantId.value = '';
       els.playlistPicker.value = '';
@@ -1467,7 +1489,6 @@
 
       if (appState.pollingTimer) clearInterval(appState.pollingTimer);
       appState.pollingTimer = null;
-      if (appState.accessToken) startPolling();
 
       saveConfigToLocalStorage();
       renderEventTable();
@@ -1495,6 +1516,7 @@
       appState.pendingDeviceChange = null;
       appState.lastPlayback = null;
       appState.latestPlayback = null;
+      appState.suppressPlaybackEventsUntil = Date.now() + 1500;
       appState.accessToken = null;
       appState.refreshToken = null;
       appState.expiresAt = null;
@@ -1567,8 +1589,7 @@
       });
       els.micBtn.addEventListener('click', enableMicrophone);
       els.startSessionBtn.addEventListener('click', startSessionAndPlay);
-      els.pauseBtn.addEventListener('click', pausePlayback);
-      els.resumeBtn.addEventListener('click', resumePlayback);
+      els.togglePlaybackBtn.addEventListener('click', togglePlayback);
       els.skipBtn.addEventListener('click', skipNext);
       els.endSessionBtn.addEventListener('click', endSession);
       els.downloadCsvBtn.addEventListener('click', downloadCsv);
