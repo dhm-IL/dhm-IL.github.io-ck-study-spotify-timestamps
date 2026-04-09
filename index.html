@@ -428,23 +428,21 @@
       </section>
 
       <section class="card" style="grid-column: 1 / -1;">
-        <div class="log-controls-layout">
-          <div class="log-panel">
-            <h2>Session log preview</h2>
-            <p class="small">Newest events first. Downloads include the full session and metadata.</p>
-            <div style="overflow:auto; max-height: 420px; border:1px solid var(--border); border-radius: 12px;">
-              <table>
-                <thead>
-                  <tr>
-                    <th>UTC</th>
-                    <th>Event</th>
-                    <th>Track URI</th>
-                  </tr>
-                </thead>
-                <tbody id="logTableBody"></tbody>
-              </table>
-            </div>
-          </div>
+        <h2>Session log preview</h2>
+        <p class="small">Newest events first. Downloads include the full session and metadata.</p>
+        <div style="overflow:auto; max-height: 420px; border:1px solid var(--border); border-radius: 12px;">
+           <table>
+             <thead>
+               <tr>
+                 <th>UTC</th>
+                 <th>Event</th>
+                 <th>Track URI</th>
+               </tr>
+             </thead>
+             <tbody id="logTableBody"></tbody>
+           </table>
+      </section>
+      <section class="card compact" style="grid-column: 1 / -1;">
           <div class="controls-panel">
             <h2>Controls</h2>
             <div class="controls-grid">
@@ -868,9 +866,9 @@
       const deviceLabel = activeDeviceName() ? `Device: ${escapeHtml(activeDeviceName())}` : 'Device not ready';
       els.statusStrip.innerHTML = [
         `<span class="status ${authOk ? 'ok' : 'bad'}">Spotify ${authOk ? 'connected' : 'not connected'}</span>`,
-        `<span class="status ${sessionOk ? 'ok' : 'warn-pill'}">Session ${sessionOk ? 'running' : 'idle'}</span>`,
+        `<span class="status ${deviceOk ? 'ok' : 'warn-pill'}">${deviceLabel}</span>`,
         `<span class="status ${micOk ? 'ok' : 'warn-pill'}">Mic ${micOk ? 'on' : 'off'}</span>`,
-        `<span class="status ${deviceOk ? 'ok' : 'warn-pill'}">${deviceLabel}</span>`
+        `<span class="status ${sessionOk ? 'ok' : 'warn-pill'}">Session ${sessionOk ? 'running' : 'idle'}</span>`
       ].join(' ');
     }
 
@@ -889,7 +887,8 @@
         playlistSelected: !!normalizePlaylistUri(els.playlistUri.value),
         startTempEntered: els.tempStart.value !== '',
         startHumidityEntered: els.humidityStart.value !== '',
-        activeDeviceReady: hasActiveDevice()
+        activeDeviceReady: hasActiveDevice(),
+	enableMic: appState.micEnabled
       };
     }
 
@@ -899,7 +898,8 @@
         ['activeDeviceReady', 'Open participant device'],
         ['participantSelected', 'Select participant'],
         ['playlistSelected', 'Choose playlist'],
-        ['startConditions', 'Enter start conditions']
+        ['startConditions', 'Enter start conditions'],
+	['enableMic', 'Enable Mic']
       ];
       const checks = setupChecks();
       const completed = {
@@ -959,6 +959,11 @@
         title = 'Step 5: Enter start conditions';
         text = 'Add the starting temperature and humidity before starting the study session.';
         currentStepKey = 'startConditions';
+      } else if (!appState.micEnabled) {
+        cls = 'warn';
+        title = 'Step 6: Enable Microphone';
+        text = 'Microphone is only used for room noise measurements.';
+        currentStepKey = 'enableMic';
       } else {
         cls = 'ok';
         title = 'Ready to start';
