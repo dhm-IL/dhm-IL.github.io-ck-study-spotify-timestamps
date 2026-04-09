@@ -900,7 +900,7 @@
       const deviceOk = hasActiveDevice();
       const deviceLabel = activeDeviceName() ? `Device: ${escapeHtml(activeDeviceName())}` : 'Device not ready';
       els.statusStrip.innerHTML = [
-        `<span class="status ${authOk ? 'ok' : 'bad'}">Spotify ${authOk ? 'connected' : 'not connected'}</span>`,
+        `<span class="status ${authOk ? 'ok' : 'bad'}">${authOk ? `Spotify: ${escapeHtml(appState.spotifyUser || 'connected')}`: 'Spotify not connected'}</span>`,
         `<span class="status ${deviceOk ? 'ok' : 'warn-pill'}">${deviceLabel}</span>`,
         `<span class="status ${micOk ? 'ok' : 'warn-pill'}">Mic ${micOk ? 'on' : 'off'}</span>`,
         `<span class="status ${sessionOk ? 'ok' : 'warn-pill'}">Session ${sessionOk ? 'running' : 'idle'}</span>`
@@ -1281,6 +1281,7 @@
     async function handleLoadPlaylists() {
       try {
         const profile = await loadMyProfile();
+		  appState.spotifyUser = profile?.display_name || profile?.id || null;
         const playlists = await loadMyPlaylists();
         addEvent('playlists_loaded', { count: playlists.length, spotify_user_id: profile?.id || null });
       } catch (err) {
