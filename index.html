@@ -1281,7 +1281,7 @@
     async function handleLoadPlaylists() {
       try {
         const profile = await loadMyProfile();
-		  appState.spotifyUser = profile?.display_name || profile?.id || null;
+		appState.spotifyUser = profile?.display_name || profile?.id || null;
         const playlists = await loadMyPlaylists();
         addEvent('playlists_loaded', { count: playlists.length, spotify_user_id: profile?.id || null });
       } catch (err) {
@@ -1549,9 +1549,11 @@
       }
       if (code) {
         try {
-          await exchangeCodeForToken(code);
-          addEvent('spotify_connected', {});
-          try { await Promise.all([loadMyPlaylists(), loadAvailableDevices(), pollPlaybackOnce().catch(() => null)]); } catch (_) {}
+			await exchangeCodeForToken(code);
+			const profile = await loadMyProfile();
+			appState.spotifyUser = profile?.display_name || profile?.id || null;
+			addEvent('spotify_connected', {});
+		try { await Promise.all([loadMyPlaylists(), loadAvailableDevices(), pollPlaybackOnce().catch(() => null)]); } catch (_) {}
         } catch (err) {
           alert(err.message);
         }
