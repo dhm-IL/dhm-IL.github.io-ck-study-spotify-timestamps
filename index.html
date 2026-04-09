@@ -137,7 +137,7 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
     .control-row.bottom {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
     .control-row button {
       width: 100%;
@@ -369,11 +369,10 @@
             <div>
               <label>&nbsp;</label>
               <button id="loginBtn">Connect Spotify</button>
-              <div id="spotifyAccountText" class="helper">No Spotify account connected.</div>
             </div>
             <div>
               <button id="logoutBtn" class="secondary">Switch Spotify Account</button>
-              <div class="helper">Use this when another Spotify account needs to sign in on this browser.</div>
+              <div class="helper">Use this when the next participant needs a different Spotify account.</div>
             </div>
           </div>
 
@@ -457,7 +456,8 @@
               <div class="control-row bottom">
                 <button id="endSessionBtn" class="danger">Finish Session</button>
                 <button id="downloadCsvBtn" class="secondary">Download CSV Data</button>
-                <button id="clearBtn" class="secondary">Erase All App Data</button>
+                <button id="newSessionBtn" class="secondary">Start New Session</button>
+                <button id="clearBtn" class="secondary">Reset App (Clear Everything)</button>
               </div>
             </div>
           </div>
@@ -489,7 +489,6 @@
       humidityEnd: document.getElementById('humidityEnd'),
       noiseSampleSeconds: document.getElementById('noiseSampleSeconds'),
       statusStrip: document.getElementById('statusStrip'),
-      spotifyAccountText: document.getElementById('spotifyAccountText'),
       micStatus: document.getElementById('micStatus'),
       currentTrack: document.getElementById('currentTrack'),
       playbackState: document.getElementById('playbackState'),
@@ -508,6 +507,7 @@
       skipBtn: document.getElementById('skipBtn'),
       endSessionBtn: document.getElementById('endSessionBtn'),
       downloadCsvBtn: document.getElementById('downloadCsvBtn'),
+      newSessionBtn: document.getElementById('newSessionBtn'),
       clearBtn: document.getElementById('clearBtn')
     };
 
@@ -530,7 +530,6 @@
       latestRms: null,
       latestPlayback: null,
       pendingDeviceChange: null,
-      spotifyProfile: null,
       storageKey: 'spotify-study-logger-v2',
       playlists: [],
       devices: []
@@ -603,8 +602,7 @@
           events: appState.events,
           accessToken: appState.accessToken,
           refreshToken: appState.refreshToken,
-          expiresAt: appState.expiresAt,
-          spotifyProfile: appState.spotifyProfile
+          expiresAt: appState.expiresAt
         }
       };
       safeLocalSet(appState.storageKey, JSON.stringify(data));
@@ -635,7 +633,6 @@
           appState.accessToken = data.state.accessToken || null;
           appState.refreshToken = data.state.refreshToken || null;
           appState.expiresAt = data.state.expiresAt || null;
-          appState.spotifyProfile = data.state.spotifyProfile || null;
         }
       } catch (err) {
         console.error('Failed to restore session', err);
@@ -750,10 +747,7 @@
     }
 
     async function loadMyProfile() {
-      const profile = await spotifyFetch('/me');
-      appState.spotifyProfile = profile || null;
-      saveConfigToLocalStorage();
-      return profile;
+      return spotifyFetch('/me');
     }
 
     async function loadMyPlaylists() {
@@ -873,19 +867,12 @@
       const micOk = !!appState.micEnabled;
       const deviceOk = hasActiveDevice();
       const deviceLabel = activeDeviceName() ? `Device: ${escapeHtml(activeDeviceName())}` : 'Device not ready';
-      const spotifyUserName = appState.spotifyProfile?.display_name || appState.spotifyProfile?.id || null;
-      const spotifyUserLabel = authOk
-        ? `Spotify: ${escapeHtml(spotifyUserName || 'Connected')}`
-        : 'Spotify not connected';
       els.statusStrip.innerHTML = [
-        `<span class="status ${authOk ? 'ok' : 'bad'}">${spotifyUserLabel}</span>`,
+        `<span class="status ${authOk ? 'ok' : 'bad'}">Spotify ${authOk ? 'connected' : 'not connected'}</span>`,
         `<span class="status ${deviceOk ? 'ok' : 'warn-pill'}">${deviceLabel}</span>`,
         `<span class="status ${micOk ? 'ok' : 'warn-pill'}">Mic ${micOk ? 'on' : 'off'}</span>`,
         `<span class="status ${sessionOk ? 'ok' : 'warn-pill'}">Session ${sessionOk ? 'running' : 'idle'}</span>`
       ].join(' ');
-      els.spotifyAccountText.textContent = authOk
-        ? `Connected account: ${spotifyUserName || 'Spotify user'}`
-        : 'No Spotify account connected.';
     }
 
     function activeDeviceName() {
@@ -952,27 +939,33 @@
         currentStepKey = null;
       } else if (!checks.spotifyConnected) {
         cls = 'bad';
-        title = 'Step 1: Click Connect Spotify and sign in. If the wrong account is shown, use Switch Spotify Account first.';
+        title = 'Step 1: Connect Spotify';
+        text = 'Click Connect Spotify, sign in, then return to this page.';
         currentStepKey = 'spotifyConnected';
       } else if (!checks.activeDeviceReady) {
         cls = 'warn';
-        title = 'Step 2: Open the Spotify app on the playback device and start/pause playback there.';
+        title = 'Step 2: Open Spotify on the playback device';
+        text = 'Open the Spotify app on the playback device and start/pause playback there.';
         currentStepKey = 'activeDeviceReady';
       } else if (!checks.participantSelected) {
         cls = 'warn';
-        title = 'Step 3: Choose the participant ID.';
+        title = 'Step 3: Select the participant';
+        text = 'Choose the participant before starting the study session.';
         currentStepKey = 'participantSelected';
       } else if (!checks.playlistSelected) {
         cls = 'warn';
-        title = 'Step 4: Pick the playlist for this session.';
+        title = 'Step 4: Choose a playlist';
+        text = 'Pick the playlist you want to use for this session.';
         currentStepKey = 'playlistSelected';
       } else if (!checks.startTempEntered || !checks.startHumidityEntered) {
         cls = 'warn';
-        title = 'Step 5: Add the starting temperature and humidity';
+        title = 'Step 5: Enter start conditions';
+        text = 'Add the starting temperature and humidity before starting the study session.';
         currentStepKey = 'startConditions';
       } else if (!appState.micEnabled) {
         cls = 'warn';
-        title = 'Step 6: Enable Microphone to capture room noise measurements';
+        title = 'Step 6: Enable Microphone';
+        text = 'Microphone is only used for room noise measurements.';
         currentStepKey = 'enableMic';
       } else {
         cls = 'ok';
@@ -997,6 +990,7 @@
       els.resumeBtn.disabled = !appState.accessToken;
       els.skipBtn.disabled = !appState.accessToken;
       els.downloadCsvBtn.disabled = appState.events.length === 0;
+      els.newSessionBtn.disabled = appState.sessionStarted || appState.events.length === 0;
       els.playlistPicker.disabled = sessionLocked;
       els.participantId.disabled = sessionLocked;
       els.tempStart.disabled = sessionLocked;
@@ -1393,8 +1387,48 @@
       downloadBlob(`${id}-spotify-study-log.csv`, 'text/csv;charset=utf-8', csv);
     }
 
+
+    function startNewSession() {
+      if (appState.sessionStarted) {
+        alert('Finish the current session before starting a new one.');
+        return;
+      }
+      if (appState.events.length > 0) {
+        const shouldContinue = confirm('Start a new session? This will clear the current participant, playlist, room conditions, and session log, but keep Spotify connected. Make sure you downloaded the CSV data first.');
+        if (!shouldContinue) return;
+      }
+
+      appState.sessionStarted = false;
+      appState.sessionStartUtc = null;
+      appState.sessionEndUtc = null;
+      appState.events = [];
+      appState.lastPlayback = null;
+      appState.pendingDeviceChange = null;
+      appState.latestRms = null;
+
+      els.participantId.value = '';
+      els.playlistPicker.value = '';
+      els.playlistUri.value = '';
+      els.tempStart.value = '';
+      els.humidityStart.value = '';
+      els.tempEnd.value = '';
+      els.humidityEnd.value = '';
+
+      if (appState.pollingTimer) clearInterval(appState.pollingTimer);
+      appState.pollingTimer = null;
+      if (appState.accessToken) startPolling();
+
+      saveConfigToLocalStorage();
+      renderEventTable();
+      renderStatus();
+      updateStudyStatusBanner();
+      updateActionStates();
+      updateLiveData();
+      alert('Ready for the next participant. Spotify stayed connected, but participant, playlist, conditions, and session log were cleared.');
+    }
+
     function clearLocalSession() {
-      if (!confirm('Reset the app and erase all saved study data and Spotify login from this browser?')) return;
+      if (!confirm('Reset the app and clear everything from this browser, including all session data and the Spotify connection?')) return;
       safeLocalRemove(appState.storageKey);
       safeSessionRemove('spotify_code_verifier');
       location.href = window.location.origin + window.location.pathname;
@@ -1402,15 +1436,12 @@
 
     function logoutSpotify() {
       if (appState.sessionStarted) {
-        alert('Finish the session before switching Spotify accounts.');
+        alert('Finish the session before disconnecting Spotify.');
         return;
       }
-      const shouldSwitch = confirm('Clear the current Spotify connection from this browser so another Spotify account can sign in?');
-      if (!shouldSwitch) return;
       appState.accessToken = null;
       appState.refreshToken = null;
       appState.expiresAt = null;
-      appState.spotifyProfile = null;
       appState.playlists = [];
       appState.devices = [];
       renderPlaylistPicker();
@@ -1439,7 +1470,7 @@
         try {
           await exchangeCodeForToken(code);
           addEvent('spotify_connected', {});
-          try { await Promise.all([loadMyProfile().catch(() => null), loadMyPlaylists(), loadAvailableDevices(), pollPlaybackOnce().catch(() => null)]); } catch (_) {}
+          try { await Promise.all([loadMyPlaylists(), loadAvailableDevices(), pollPlaybackOnce().catch(() => null)]); } catch (_) {}
         } catch (err) {
           alert(err.message);
         }
@@ -1479,6 +1510,7 @@
       els.skipBtn.addEventListener('click', skipNext);
       els.endSessionBtn.addEventListener('click', endSession);
       els.downloadCsvBtn.addEventListener('click', downloadCsv);
+      els.newSessionBtn.addEventListener('click', startNewSession);
       els.clearBtn.addEventListener('click', clearLocalSession);
     }
 
@@ -1497,7 +1529,7 @@
       await handleAuthCallbackIfPresent();
       if (appState.accessToken) {
         startPolling();
-        try { await Promise.all([pollPlaybackOnce(), loadMyProfile().catch(() => null), loadMyPlaylists().catch(() => []), loadAvailableDevices().catch(() => [])]); } catch (_) {}
+        try { await Promise.all([pollPlaybackOnce(), loadMyPlaylists().catch(() => []), loadAvailableDevices().catch(() => [])]); } catch (_) {}
       }
       setInterval(() => {
         if (appState.accessToken && !appState.sessionStarted) {
