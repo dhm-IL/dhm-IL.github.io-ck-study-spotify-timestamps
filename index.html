@@ -432,7 +432,7 @@
       <section class="card" style="grid-column: 1 / -1;">
         <h2>Session log preview</h2>
         <p class="small">Newest events on top. Downloads include the full session and metadata.</p>
-        <div style="overflow:auto; max-height: 320px; border:1px solid var(--border); border-radius: 12px;">
+        <div style="overflow:auto; max-height: 220px; border:1px solid var(--border); border-radius: 12px;">
            <table>
              <thead>
                <tr>
@@ -873,6 +873,10 @@
       const micOk = !!appState.micEnabled;
       const deviceOk = hasActiveDevice();
       const deviceLabel = activeDeviceName() ? `Device: ${escapeHtml(activeDeviceName())}` : 'Device not ready';
+      const spotifyUserName = appState.spotifyProfile?.display_name || appState.spotifyProfile?.id || null;
+      const spotifyUserLabel = authOk
+        ? `Spotify: ${escapeHtml(spotifyUserName || 'Connected')}`
+        : 'Spotify not connected';
       els.statusStrip.innerHTML = [
         `<span class="status ${authOk ? 'ok' : 'bad'}">${spotifyUserLabel}</span>`,
         `<span class="status ${deviceOk ? 'ok' : 'warn-pill'}">${deviceLabel}</span>`,
@@ -880,7 +884,7 @@
         `<span class="status ${sessionOk ? 'ok' : 'warn-pill'}">Session ${sessionOk ? 'running' : 'idle'}</span>`
       ].join(' ');
       els.spotifyAccountText.textContent = authOk
-        ? `Connected account: ${appState.spotifyProfile?.display_name || appState.spotifyProfile?.id || 'Spotify user'}`
+        ? `Connected account: ${spotifyUserName || 'Spotify user'}`
         : 'No Spotify account connected.';
     }
 
