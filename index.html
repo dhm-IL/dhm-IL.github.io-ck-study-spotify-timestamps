@@ -369,9 +369,11 @@
             <div>
               <label>&nbsp;</label>
               <button id="loginBtn">Connect Spotify</button>
+              <div id="spotifyAccountText" class="helper">No Spotify account connected.</div>
             </div>
             <div>
-              <button id="logoutBtn" class="secondary">Disconnect Spotify</button>
+              <button id="logoutBtn" class="secondary">Switch Spotify Account</button>
+              <div class="helper">Use this when another Spotify account needs to sign in on this browser.</div>
             </div>
           </div>
 
@@ -487,6 +489,7 @@
       humidityEnd: document.getElementById('humidityEnd'),
       noiseSampleSeconds: document.getElementById('noiseSampleSeconds'),
       statusStrip: document.getElementById('statusStrip'),
+      spotifyAccountText: document.getElementById('spotifyAccountText'),
       micStatus: document.getElementById('micStatus'),
       currentTrack: document.getElementById('currentTrack'),
       playbackState: document.getElementById('playbackState'),
@@ -527,6 +530,7 @@
       latestRms: null,
       latestPlayback: null,
       pendingDeviceChange: null,
+      spotifyProfile: null,
       storageKey: 'spotify-study-logger-v2',
       playlists: [],
       devices: []
@@ -599,7 +603,8 @@
           events: appState.events,
           accessToken: appState.accessToken,
           refreshToken: appState.refreshToken,
-          expiresAt: appState.expiresAt
+          expiresAt: appState.expiresAt,
+          spotifyProfile: appState.spotifyProfile
         }
       };
       safeLocalSet(appState.storageKey, JSON.stringify(data));
@@ -630,6 +635,7 @@
           appState.accessToken = data.state.accessToken || null;
           appState.refreshToken = data.state.refreshToken || null;
           appState.expiresAt = data.state.expiresAt || null;
+          appState.spotifyProfile = data.state.spotifyProfile || null;
         }
       } catch (err) {
         console.error('Failed to restore session', err);
@@ -744,7 +750,10 @@
     }
 
     async function loadMyProfile() {
-      return spotifyFetch('/me');
+      const profile = await spotifyFetch('/me');
+      appState.spotifyProfile = profile || null;
+      saveConfigToLocalStorage();
+      return profile;
     }
 
     async function loadMyPlaylists() {
@@ -865,11 +874,14 @@
       const deviceOk = hasActiveDevice();
       const deviceLabel = activeDeviceName() ? `Device: ${escapeHtml(activeDeviceName())}` : 'Device not ready';
       els.statusStrip.innerHTML = [
-        `<span class="status ${authOk ? 'ok' : 'bad'}">Spotify ${authOk ? 'connected' : 'not connected'}</span>`,
+        `<span class="status ${authOk ? 'ok' : 'bad'}">${spotifyUserLabel}</span>`,
         `<span class="status ${deviceOk ? 'ok' : 'warn-pill'}">${deviceLabel}</span>`,
         `<span class="status ${micOk ? 'ok' : 'warn-pill'}">Mic ${micOk ? 'on' : 'off'}</span>`,
         `<span class="status ${sessionOk ? 'ok' : 'warn-pill'}">Session ${sessionOk ? 'running' : 'idle'}</span>`
       ].join(' ');
+      els.spotifyAccountText.textContent = authOk
+        ? `Connected account: ${appState.spotifyProfile?.display_name || appState.spotifyProfile?.id || 'Spotify user'}`
+        : 'No Spotify account connected.';
     }
 
     function activeDeviceName() {
@@ -895,7 +907,7 @@
     function renderSetupStepper(currentStepKey) {
       const steps = [
         ['spotifyConnected', 'Connect Spotify'],
-        ['activeDeviceReady', 'Open participant device'],
+        ['activeDeviceReady', 'Go to playback device'],
         ['participantSelected', 'Select participant'],
         ['playlistSelected', 'Choose playlist'],
         ['startConditions', 'Enter start conditions'],
@@ -937,12 +949,12 @@
       } else if (!checks.spotifyConnected) {
         cls = 'bad';
         title = 'Step 1: Connect Spotify';
-        text = 'Click Connect Spotify, sign in, then return to this page.';
+        text = 'Click Connect Spotify and sign in. If the wrong account is shown, use Switch Spotify Account first.';
         currentStepKey = 'spotifyConnected';
       } else if (!checks.activeDeviceReady) {
         cls = 'warn';
-        title = 'Step 2: Open Spotify on the participant device';
-        text = 'Open the Spotify app on the participant device and start or resume playback there.';
+        title = 'Step 2: Open Spotify on the playback device';
+        text = 'Open the Spotify app on the playback device and start/pause playback there.';
         currentStepKey = 'activeDeviceReady';
       } else if (!checks.participantSelected) {
         cls = 'warn';
@@ -1392,12 +1404,15 @@
 
     function logoutSpotify() {
       if (appState.sessionStarted) {
-        alert('Finish the session before disconnecting Spotify.');
+        alert('Finish the session before switching Spotify accounts.');
         return;
       }
+      const shouldSwitch = confirm('Clear the current Spotify connection from this browser so another Spotify account can sign in?');
+      if (!shouldSwitch) return;
       appState.accessToken = null;
       appState.refreshToken = null;
       appState.expiresAt = null;
+      appState.spotifyProfile = null;
       appState.playlists = [];
       appState.devices = [];
       renderPlaylistPicker();
@@ -1426,7 +1441,7 @@
         try {
           await exchangeCodeForToken(code);
           addEvent('spotify_connected', {});
-          try { await Promise.all([loadMyPlaylists(), loadAvailableDevices(), pollPlaybackOnce().catch(() => null)]); } catch (_) {}
+          try { await Promise.all([loadMyProfile().catch(() => null), loadMyPlaylists(), loadAvailableDevices(), pollPlaybackOnce().catch(() => null)]); } catch (_) {}
         } catch (err) {
           alert(err.message);
         }
@@ -1484,7 +1499,7 @@
       await handleAuthCallbackIfPresent();
       if (appState.accessToken) {
         startPolling();
-        try { await Promise.all([pollPlaybackOnce(), loadMyPlaylists().catch(() => []), loadAvailableDevices().catch(() => [])]); } catch (_) {}
+        try { await Promise.all([pollPlaybackOnce(), loadMyProfile().catch(() => null), loadMyPlaylists().catch(() => []), loadAvailableDevices().catch(() => [])]); } catch (_) {}
       }
       setInterval(() => {
         if (appState.accessToken && !appState.sessionStarted) {
