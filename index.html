@@ -124,18 +124,24 @@
       vertical-align: top;
     }
     th { color: #cbd5e1; }
-    .sticky-actions {
-      position: sticky;
-      bottom: 0;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(10px);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 10px;
-      margin-top: 12px;
+    .controls-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 8px;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .control-row {
+      display: grid;
+      gap: 10px;
+    }
+    .control-row.top {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .control-row.bottom {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .control-row button {
+      width: 100%;
+      margin-top: 0;
     }
     code {
       background: rgba(255,255,255,0.08);
@@ -218,6 +224,35 @@
       gap: 8px;
       margin-top: 8px;
     }
+    .live-session-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .live-session-left {
+      min-width: 0;
+    }
+    .live-session-right {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+    .compact-btn {
+      width: 100%;
+      max-width: 100%;
+      margin-top: 0;
+    }
+    .log-controls-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(280px, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .log-panel,
+    .controls-panel {
+      min-width: 0;
+    }
     .metric-line {
       padding: 8px 10px;
       background: #0b1220;
@@ -285,7 +320,9 @@
         padding: 14px;
       }
       .grid,
-      .setup-layout {
+      .setup-layout,
+      .live-session-layout,
+      .log-controls-layout {
         grid-template-columns: 1fr;
       }
       .setup-stack button {
@@ -307,6 +344,7 @@
       }
       
     }
+
 
   </style>
 </head>
@@ -339,15 +377,14 @@
 
           <div class="setup-column setup-pair">
             <div class="field-block">
+              <h3>Participant</h3>
+              <select id="participantId"></select>
+            </div>
+            <div class="field-block">
               <h3>Playlist</h3>
               <select id="playlistPicker">
                 <option value="">Connect Spotify first…</option>
               </select>
-              <div class="helper">Your playlists load here after Spotify connects.</div>
-            </div>
-            <div class="field-block">
-              <h3>Participant</h3>
-              <select id="participantId"></select>
             </div>
           </div>
 
@@ -377,47 +414,56 @@
       <section class="card compact" style="grid-column: 1 / -1;">
         <h2>Live session</h2>
         <p class="section-intro">Use the microphone only if you want noise measurements.</p>
-        <button id="micBtn" class="secondary">Enable Microphone (for noise measurement)</button>
-        <div id="micStatus" class="small muted" style="margin-top:8px;">Microphone not enabled.</div>
-        <div class="compact-metrics">
-          <div class="metric-line">Track: <strong id="currentTrack">—</strong></div>
-          <div class="metric-line">Playback: <strong id="playbackState">—</strong> · Position: <strong id="playbackPosition">—</strong></div>
-          <div class="metric-line">Mic: <strong id="noiseRms">—</strong> · Events logged: <strong id="eventCount">0</strong></div>
+        <div class="live-session-layout">
+          <div class="live-session-left">
+            <button id="micBtn" class="secondary compact-btn">Enable Microphone</button>
+            <div id="micStatus" class="small muted" style="margin-top:8px;">Microphone not enabled.</div>
+          </div>
+          <div class="live-session-right">
+            <div class="metric-line">Track: <strong id="currentTrack">—</strong></div>
+            <div class="metric-line">Playback: <strong id="playbackState">—</strong> · Position: <strong id="playbackPosition">—</strong></div>
+            <div class="metric-line">Mic: <strong id="noiseRms">—</strong> · Events logged: <strong id="eventCount">0</strong></div>
+          </div>
         </div>
       </section>
 
       <section class="card" style="grid-column: 1 / -1;">
-        <h2>Session log preview</h2>
-        <p class="small">Newest events first. Downloads include the full session and metadata.</p>
-        <div style="overflow:auto; max-height: 420px; border:1px solid var(--border); border-radius: 12px;">
-          <table>
-            <thead>
-              <tr>
-                <th>UTC</th>
-                <th>Event</th>
-                <th>Track URI</th>
-              </tr>
-            </thead>
-            <tbody id="logTableBody"></tbody>
-          </table>
+        <div class="log-controls-layout">
+          <div class="log-panel">
+            <h2>Session log preview</h2>
+            <p class="small">Newest events first. Downloads include the full session and metadata.</p>
+            <div style="overflow:auto; max-height: 420px; border:1px solid var(--border); border-radius: 12px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>UTC</th>
+                    <th>Event</th>
+                    <th>Track URI</th>
+                  </tr>
+                </thead>
+                <tbody id="logTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="controls-panel">
+            <h2>Controls</h2>
+            <div class="controls-grid">
+              <div class="control-row top">
+                <button id="startSessionBtn">Start Study Session</button>
+                <button id="pauseBtn" class="secondary">Pause</button>
+                <button id="resumeBtn" class="secondary">Resume</button>
+                <button id="skipBtn" class="warn">Next Song</button>
+              </div>
+              <div class="control-row bottom">
+                <button id="endSessionBtn" class="danger">Finish Session</button>
+                <button id="downloadCsvBtn" class="secondary">Download CSV Data</button>
+                <button id="clearBtn" class="secondary">Erase All App Data</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="sticky-actions">
-          <button id="startSessionBtn">Start Study Session</button>
-          <button id="pauseBtn" class="secondary">Pause Music</button>
-          <button id="resumeBtn" class="secondary">Resume Music</button>
-          <button id="skipBtn" class="warn">Skip to Next Song</button>
-          <button id="endSessionBtn" class="danger">Finish Session</button>
-          <button id="downloadCsvBtn" class="secondary">Download CSV Data</button>
-          <button id="clearBtn" class="secondary">Reset App (Erase All Data)</button>
-        </div>
-        <div class="actions-helper">Session controls stay below the log so the main setup area stays focused and compact.</div>
       </section>
     </div>
-
-    <section class="card" style="margin-top: 16px;">
-      <h2>Quick flow</h2>
-      <p class="small muted">Connect Spotify, confirm the participant device is active, choose the participant and playlist, enter the starting room conditions, then start the session. When the study ends, enter the ending conditions, finish the session, and download the CSV.</p>
-    </section>
   </div>
 
   <script>
