@@ -1019,8 +1019,7 @@
       const finished = !!appState.sessionEndUtc;
 
       els.startSessionBtn.style.display = (!running && !finished) ? 'block' : 'none';
-      els.pauseBtn.style.display = running ? 'block' : 'none';
-      els.resumeBtn.style.display = running ? 'block' : 'none';
+      els.togglePlaybackBtn.style.display = running ? 'block' : 'none';
       els.skipBtn.style.display = running ? 'block' : 'none';
       els.endSessionBtn.style.display = running ? 'block' : 'none';
       els.downloadCsvBtn.style.display = (finished || appState.events.length > 0) ? 'block' : 'none';
