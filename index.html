@@ -874,7 +874,7 @@
         playback_position_ms: details.playback_position_ms ?? appState.latestPlayback?.progress_ms ?? null,
         is_playing: details.is_playing ?? appState.latestPlayback?.is_playing ?? null,
         device_id: details.device_id ?? appState.latestPlayback?.device?.id ?? null,
-        noise_rms: details.noise_rms ?? appState.latestRms
+        noise_rms: details.noise_rms ?? appState.latestRms,
 		temp_start_f: details.temp_start_f ?? null,
   		humidity_start_pct: details.humidity_start_pct ?? null,
   		temp_end_f: details.temp_end_f ?? null,
@@ -927,7 +927,7 @@
         startTempEntered: els.tempStart.value !== '',
         startHumidityEntered: els.humidityStart.value !== '',
         activeDeviceReady: hasActiveDevice(),
-	enableMic: appState.micEnabled
+	    enableMic: appState.micEnabled
       };
     }
 
