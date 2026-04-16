@@ -875,6 +875,10 @@
         is_playing: details.is_playing ?? appState.latestPlayback?.is_playing ?? null,
         device_id: details.device_id ?? appState.latestPlayback?.device?.id ?? null,
         noise_rms: details.noise_rms ?? appState.latestRms
+		temp_start_f: details.temp_start_f ?? null,
+  		humidity_start_pct: details.humidity_start_pct ?? null,
+  		temp_end_f: details.temp_end_f ?? null,
+  		humidity_end_pct: details.humidity_end_pct ?? null
       };
       appState.events.push(evt);
       saveConfigToLocalStorage();
@@ -1085,7 +1089,8 @@
         appState.micContext = audioContext;
         appState.micAnalyser = analyser;
         appState.micDataArray = new Float32Array(analyser.fftSize);
-        appState.micEnabled = true;        
+        appState.micEnabled = true;
+		els.micStatus.textContent = 'ENABLED';
         renderStatus();
         addEvent('microphone_enabled', {});
         startNoiseSampler();
