@@ -1435,28 +1435,57 @@
     }
 
     function downloadCsv() {
-      const rows = [
-        ['utc','monotonic_ms','event','participant_id','playlist_uri','track_uri','track_name','playback_position_ms','is_playing','device_id','noise_rms']
-      ];
-      for (const evt of appState.events) {
-        rows.push([
-          evt.utc,
-          evt.monotonic_ms,
-          evt.event,
-          evt.participant_id,
-          evt.playlist_uri,
-          evt.track_uri,
-          evt.track_name,
-          evt.playback_position_ms,
-          evt.is_playing,
-          evt.device_id,
-          evt.noise_rms
-        ]);
-      }
-      const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
-      const id = els.participantId.value.trim() || 'session';
-      downloadBlob(`${id}-spotify-study-log.csv`, 'text/csv;charset=utf-8', csv);
-    }
+	  const rows = [
+	    [
+	      'utc',
+	      'monotonic_ms',
+	      'event',
+	      'participant_id',
+	      'playlist_uri',
+	      'track_uri',
+	      'track_name',
+	      'playback_position_ms',
+	      'is_playing',
+	      'device_id',
+	      'noise_rms',
+	      'temp_start_f',
+	      'humidity_start_pct',
+	      'temp_end_f',
+	      'humidity_end_pct'
+	    ]
+	  ];
+	
+	  for (const evt of appState.events) {
+	    rows.push([
+	      evt.utc,
+	      evt.monotonic_ms,
+	      evt.event,
+	      evt.participant_id,
+	      evt.playlist_uri,
+	      evt.track_uri,
+	      evt.track_name,
+	      evt.playback_position_ms,
+	      evt.is_playing,
+	      evt.device_id,
+	      evt.noise_rms,
+	      evt.temp_start_f ?? '',
+	      evt.humidity_start_pct ?? '',
+	      evt.temp_end_f ?? '',
+	      evt.humidity_end_pct ?? ''
+	    ]);
+	  }
+	
+	  const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
+	  const id = els.participantId.value.trim() || 'session';
+	
+	  const now = new Date();
+	  const yyyy = now.getFullYear();
+	  const mm = String(now.getMonth() + 1).padStart(2, '0');
+	  const dd = String(now.getDate()).padStart(2, '0');
+	  const dateStr = `${yyyy}-${mm}-${dd}`;
+	
+	  downloadBlob(`${id}_${dateStr}_spotify_study_log.csv`, 'text/csv;charset=utf-8', csv);
+	}
 
 
     function startNewSession() {
